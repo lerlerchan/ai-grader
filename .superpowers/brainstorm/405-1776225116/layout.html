@@ -1,0 +1,93 @@
+<h2>Which layout feels right for teachers?</h2>
+<p class="subtitle">All three do the same thing: pick scheme → pick submissions → click Mark → download results</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family:monospace;font-size:11px;background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:6px;line-height:1.6">
+        <div style="background:#313244;padding:6px 10px;border-radius:4px;margin-bottom:10px;color:#89b4fa;font-weight:bold;font-size:12px">🎓 AI Grader</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <span style="color:#a6e3a1;width:120px">Marking Scheme</span>
+          <div style="flex:1;background:#313244;border:1px solid #45475a;color:#cdd6f4;padding:3px 6px;border-radius:3px;font-size:10px">scheme.pdf</div>
+          <button style="padding:3px 8px;font-size:10px;background:#89b4fa;color:#1e1e2e;border:none;border-radius:3px">Browse</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <span style="color:#a6e3a1;width:120px">Submissions Folder</span>
+          <div style="flex:1;background:#313244;border:1px solid #45475a;color:#cdd6f4;padding:3px 6px;border-radius:3px;font-size:10px">./class_a/</div>
+          <button style="padding:3px 8px;font-size:10px;background:#89b4fa;color:#1e1e2e;border:none;border-radius:3px">Browse</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <span style="color:#a6e3a1;width:120px">Model</span>
+          <div style="flex:1;background:#313244;border:1px solid #45475a;color:#cdd6f4;padding:3px 6px;border-radius:3px;font-size:10px">gemma4:12b ▾</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+          <span style="color:#a6e3a1;width:120px">Questions</span>
+          <div style="flex:1;background:#313244;border:1px solid #45475a;color:#cdd6f4;padding:3px 6px;border-radius:3px;font-size:10px">Q1, Q2, Q3, Q4</div>
+        </div>
+        <button style="width:100%;padding:8px;background:#a6e3a1;color:#1e1e2e;border:none;border-radius:4px;font-weight:bold;font-size:12px;cursor:pointer">▶ Mark Submissions</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Single Form</h3>
+      <p>Everything on one page. Fill in fields, click Mark. Simple, no steps.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family:monospace;font-size:11px;background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:6px;line-height:1.6">
+        <div style="background:#313244;padding:6px 10px;border-radius:4px;margin-bottom:10px;color:#89b4fa;font-weight:bold;font-size:12px">🎓 AI Grader</div>
+        <div style="display:flex;gap:4px;margin-bottom:12px">
+          <div style="flex:1;text-align:center;padding:4px;background:#89b4fa;color:#1e1e2e;border-radius:3px;font-size:10px;font-weight:bold">① Scheme</div>
+          <div style="flex:1;text-align:center;padding:4px;background:#313244;color:#6c7086;border-radius:3px;font-size:10px">② Submissions</div>
+          <div style="flex:1;text-align:center;padding:4px;background:#313244;color:#6c7086;border-radius:3px;font-size:10px">③ Settings</div>
+          <div style="flex:1;text-align:center;padding:4px;background:#313244;color:#6c7086;border-radius:3px;font-size:10px">④ Mark</div>
+        </div>
+        <div style="background:#313244;border-radius:4px;padding:10px;min-height:60px;margin-bottom:10px;text-align:center">
+          <div style="color:#6c7086;font-size:10px;margin-bottom:6px">Upload or drag your marking scheme</div>
+          <button style="padding:4px 12px;background:#89b4fa;color:#1e1e2e;border:none;border-radius:3px;font-size:10px">Choose File</button>
+        </div>
+        <div style="display:flex;justify-content:flex-end">
+          <button style="padding:5px 14px;background:#a6e3a1;color:#1e1e2e;border:none;border-radius:3px;font-size:10px;font-weight:bold">Next →</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Step Wizard</h3>
+      <p>4-step wizard. Each step has one job. Harder to make mistakes.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family:monospace;font-size:11px;background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:6px;line-height:1.6">
+        <div style="background:#313244;padding:6px 10px;border-radius:4px;margin-bottom:10px;color:#89b4fa;font-weight:bold;font-size:12px">🎓 AI Grader</div>
+        <div style="display:flex;gap:8px">
+          <div style="width:110px;background:#181825;border-radius:4px;padding:8px;font-size:10px">
+            <div style="color:#a6e3a1;margin-bottom:6px;font-weight:bold">Setup</div>
+            <div style="color:#cdd6f4;margin-bottom:3px">📄 Scheme</div>
+            <div style="color:#cdd6f4;margin-bottom:3px">📁 Submissions</div>
+            <div style="color:#cdd6f4;margin-bottom:3px">⚙️ Settings</div>
+            <div style="color:#a6e3a1;margin-top:10px;font-weight:bold">History</div>
+            <div style="color:#6c7086;margin-bottom:2px;font-size:9px">Apr 14 — Batch A</div>
+            <div style="color:#6c7086;font-size:9px">Apr 12 — Batch B</div>
+          </div>
+          <div style="flex:1">
+            <div style="background:#313244;border-radius:4px;padding:8px;margin-bottom:6px;font-size:10px">
+              <div style="color:#6c7086;margin-bottom:4px">Scheme: <span style="color:#cdd6f4">scheme.pdf ✓</span></div>
+              <div style="color:#6c7086;margin-bottom:4px">Folder: <span style="color:#cdd6f4">./class_a/ (12 files) ✓</span></div>
+              <div style="color:#6c7086">Model: <span style="color:#cdd6f4">gemma4:12b</span></div>
+            </div>
+            <button style="width:100%;padding:6px;background:#a6e3a1;color:#1e1e2e;border:none;border-radius:3px;font-weight:bold;font-size:11px">▶ Mark</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Sidebar + Summary</h3>
+      <p>Sidebar nav with grading history. Overkill for v1 but grows well.</p>
+    </div>
+  </div>
+
+</div>
