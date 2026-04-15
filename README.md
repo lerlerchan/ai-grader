@@ -46,6 +46,34 @@ Results are saved to `./output/marks.xlsx` and `./output/marks.csv`.
 
 ---
 
+## Teacher quickstart (browser app)
+
+For non-technical use, launch the local browser UI instead of working in the terminal:
+
+```bash
+# Install the app
+pip install -r requirements.txt
+pip install -e .
+
+# Start Ollama in a separate terminal
+ollama serve
+
+# Pull at least one model
+ollama pull gemma4:12b
+
+# Launch the teacher UI
+ai-grader gui
+```
+
+The app opens in your browser at `http://127.0.0.1:5000` and lets you:
+
+- upload a marking scheme
+- paste a submissions folder path
+- choose a local Ollama model
+- grade the batch and download `marks.xlsx` / `marks.csv`
+
+---
+
 ## Usage
 
 ```
@@ -62,6 +90,20 @@ Options:
       --dpi INTEGER         PDF render resolution      [default: 150]
 ```
 
+### Launch the web UI
+
+```bash
+ai-grader gui [OPTIONS]
+
+Options:
+      --host TEXT           Host to bind the local web app  [default: 127.0.0.1]
+      --port INTEGER        Port to bind the local web app  [default: 5000]
+      --no-browser          Do not open the browser automatically
+  -q, --questions TEXT      Default question labels shown in the web UI
+      --ollama-host TEXT    Ollama API host used by the web UI
+      --dpi INTEGER         Default DPI for PDF rendering in the web UI
+```
+
 ### Example — custom questions
 
 ```bash
@@ -71,6 +113,73 @@ ai-grader mark \
   --questions "Q1,Q2,Q3" \
   --format csv
 ```
+
+---
+
+## Automated testing
+
+Install test dependencies:
+
+```bash
+pip install -e ".[test]"
+```
+
+Unit tests run locally without Ollama:
+
+```bash
+pytest
+```
+
+Live integration tests use a real local Ollama server and model:
+
+```bash
+ollama serve
+ollama pull gemma4:12b
+pytest --run-integration -m integration --ollama-model gemma4:12b
+```
+
+Notes:
+
+- Integration tests are opt-in and skipped unless `--run-integration` is provided.
+- `--ollama-host` defaults to `OLLAMA_HOST` or `http://localhost:11434`.
+- `--ollama-model` defaults to `AI_GRADER_TEST_MODEL` or `gemma4:12b`.
+- Current GUI coverage includes route and happy-path stream tests.
+- Still needed: reconnect or cancellation coverage and packaged Windows smoke tests.
+
+---
+
+## Windows release build
+
+To build a Windows teacher release, use PyInstaller:
+
+```bash
+pip install -e ".[release]"
+pyinstaller --noconfirm --clean release/windows/ai-grader-gui.spec
+```
+
+On Windows, you can also use:
+
+```powershell
+.\scripts\build-windows.ps1
+```
+
+This produces a packaged app in `dist/AI-Grader/` and a zip archive in `dist/AI-Grader-windows.zip`.
+
+### Teacher setup checklist
+
+For the first Windows release, teachers still need Ollama installed separately:
+
+1. Install Ollama from `https://ollama.com/download`
+2. Run `ollama serve`
+3. Pull a recommended model such as `gemma4:12b`
+4. Start the packaged AI Grader app
+5. Open the browser UI and run grading normally
+
+### Troubleshooting
+
+- If the model dropdown is empty, Ollama is not running or no model is installed.
+- If a grading row is flagged red, the result contains `-1` and should be checked manually.
+- If the packaged app does not start, confirm Ollama is installed and try launching again.
 
 ---
 

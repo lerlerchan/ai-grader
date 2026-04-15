@@ -2,6 +2,7 @@
 cli.py — Command-line interface for ai-grader.
 """
 
+import ipaddress
 import os
 import sys
 
@@ -72,6 +73,7 @@ def cli():
 )
 @click.option(
     "--dpi",
+    type=click.IntRange(72, 300),
     default=150,
     show_default=True,
     help="DPI for PDF-to-image conversion (vision mode)",
@@ -166,5 +168,69 @@ def _error_result(sub, questions, error_msg):
     return result
 
 
+@cli.command()
+@click.option("--host", default="127.0.0.1", show_default=True, help="Host to bind the local web app")
+@click.option("--port", default=5000, show_default=True, type=int, help="Port to bind the local web app")
+@click.option("--no-browser", is_flag=True, help="Do not open the browser automatically")
+@click.option("--unsafe-expose", is_flag=True, help="Allow binding the web UI to a non-local host")
+@click.option(
+    "--questions", "-q",
+    default="Q1,Q2,Q3,Q4",
+    show_default=True,
+    help="Default comma-separated question labels shown in the web UI",
+)
+@click.option(
+    "--ollama-host",
+    default=os.environ.get("OLLAMA_HOST", "http://localhost:11434"),
+    show_default=True,
+    help="Ollama API host used by the web UI",
+)
+@click.option(
+    "--dpi",
+    type=click.IntRange(72, 300),
+    default=150,
+    show_default=True,
+    help="Default DPI for PDF-to-image conversion in the web UI",
+)
+def gui(host, port, no_browser, unsafe_expose, questions, ollama_host, dpi):
+    """Launch the local browser-based grading app."""
+
+    question_list = [q.strip().upper() for q in questions.split(",") if q.strip()]
+    if not _is_local_host(host) and not unsafe_expose:
+        raise click.UsageError(
+            "Refusing to expose the GUI outside localhost without --unsafe-expose."
+        )
+
+    try:
+        from .gui import browser_url, run as run_gui
+    except ImportError as exc:
+        click.echo(
+            "ERROR: Flask is required to launch the web UI.\n"
+            'Install it with: pip install -e ".[test]" or pip install flask',
+            err=True,
+        )
+        raise SystemExit(1) from exc
+
+    click.echo(f"Starting AI Grader UI at {browser_url(host, port)}")
+    run_gui(
+        host=host,
+        port=port,
+        open_browser=not no_browser,
+        ollama_host=ollama_host,
+        default_questions=question_list,
+        default_dpi=dpi,
+    )
+
+
 def main():
     cli()
+
+
+def _is_local_host(host: str) -> bool:
+    if host.lower() == "localhost":
+        return True
+
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False

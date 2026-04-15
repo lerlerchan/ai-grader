@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Grader Studio</title>
+  <style>
+    :root {
+      --ink: #f5f0e5;
+      --muted: #c1b6a0;
+      --paper: #f1e7d3;
+      --noir: #171411;
+      --panel: rgba(36, 27, 18, 0.74);
+      --panel-strong: rgba(27, 20, 13, 0.9);
+      --line: rgba(241, 231, 211, 0.14);
+      --accent: #ffad42;
+      --accent-2: #f97352;
+      --good: #7dde8a;
+      --bad: #ff8d7c;
+      --shadow: 0 32px 90px rgba(0, 0, 0, 0.35);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(255, 173, 66, 0.14), transparent 36%),
+        radial-gradient(circle at bottom right, rgba(249, 115, 82, 0.18), transparent 30%),
+        linear-gradient(135deg, #15110e 0%, #24160f 48%, #0f0d0b 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at center, black 40%, transparent 92%);
+      opacity: 0.3;
+    }
+
+    .shell {
+      position: relative;
+      width: min(1180px, calc(100% - 32px));
+      margin: 24px auto;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: calc(var(--radius) + 8px);
+      background: linear-gradient(180deg, rgba(30, 22, 15, 0.88), rgba(17, 13, 10, 0.96));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .shell::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(125deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
+      transform: translateX(-100%);
+      animation: sheen 7s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes sheen {
+      to { transform: translateX(100%); }
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.25fr 0.95fr;
+      gap: 24px;
+      align-items: stretch;
+      margin-bottom: 24px;
+    }
+
+    .masthead, .panel {
+      position: relative;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+    }
+
+    .masthead {
+      padding: 30px;
+      overflow: hidden;
+    }
+
+    .masthead::before {
+      content: "Faculty Edition";
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      color: var(--paper);
+      font-size: 0.85rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 34px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent));
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.6rem, 6vw, 5rem);
+      line-height: 0.95;
+      font-weight: 600;
+      color: var(--paper);
+      max-width: 10ch;
+    }
+
+    .lead {
+      margin: 20px 0 0;
+      max-width: 56ch;
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    .hero-card {
+      padding: 26px;
+      display: grid;
+      gap: 20px;
+      align-content: start;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .status-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(255, 173, 66, 0.12);
+    }
+
+    .status-ok .status-dot { background: var(--good); box-shadow: 0 0 0 8px rgba(125, 222, 138, 0.12); }
+    .status-bad .status-dot { background: var(--bad); box-shadow: 0 0 0 8px rgba(255, 141, 124, 0.12); }
+
+    .meta-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .meta-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .meta-item strong { color: var(--paper); font-weight: 600; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+    }
+
+    .panel {
+      padding: 26px;
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.75rem;
+      color: var(--paper);
+      font-weight: 600;
+    }
+
+    .panel p {
+      margin: 0 0 18px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--paper);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="file"],
+    select {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: var(--ink);
+      font: inherit;
+    }
+
+    input::placeholder { color: rgba(241, 231, 211, 0.42); }
+
+    details {
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.09);
+      background: rgba(255,255,255,0.03);
+      padding: 0 16px 16px;
+    }
+
+    summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 16px 0;
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--paper);
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    .inline-grid {
+      display: grid;
+      grid-template-columns: 1fr 150px;
+      gap: 16px;
+    }
+
+    .cta {
+      appearance: none;
+      border: 0;
+      border-radius: 18px;
+      padding: 16px 22px;
+      width: 100%;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #22160d;
+      background: linear-gradient(135deg, var(--accent), #ffd59c);
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease;
+      box-shadow: 0 16px 40px rgba(255, 173, 66, 0.2);
+    }
+
+    .cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 22px 42px rgba(255, 173, 66, 0.26);
+    }
+
+    .cta:disabled {
+      cursor: wait;
+      opacity: 0.72;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .microcopy {
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .callout {
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+      color: var(--paper);
+    }
+
+    .progress {
+      display: none;
+      gap: 18px;
+    }
+
+    .progress.active { display: grid; }
+
+    .tracker {
+      width: 100%;
+      height: 14px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .tracker > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 220ms ease;
+    }
+
+    .stream-table {
+      max-height: 420px;
+      overflow: auto;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.18);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      padding: 14px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: rgba(20, 15, 10, 0.95);
+      color: var(--paper);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+
+    tr.flagged td {
+      background: rgba(255, 141, 124, 0.08);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: rgba(255,255,255,0.08);
+      color: var(--paper);
+    }
+
+    .downloads {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .downloads a, .ghost-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 170px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: var(--paper);
+      text-decoration: none;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .ghost-button {
+      margin-top: 10px;
+    }
+
+    .message {
+      display: none;
+      padding: 14px 16px;
+      border-radius: 16px;
+      line-height: 1.5;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .message.active { display: block; }
+    .message.ok { background: rgba(125, 222, 138, 0.08); color: #dff7e4; }
+    .message.error { background: rgba(255, 141, 124, 0.1); color: #ffd8d0; }
+    .message.info { background: rgba(255,255,255,0.05); color: var(--paper); }
+
+    @media (max-width: 980px) {
+      .hero, .workspace { grid-template-columns: 1fr; }
+      .inline-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="masthead">
+        <div class="eyebrow">Private local marking</div>
+        <h1>AI Grader Studio</h1>
+        <p class="lead">
+          Upload a marking scheme, paste the folder path to student work, choose a local Ollama model,
+          and grade the full batch without sending student data anywhere else.
+        </p>
+      </div>
+
+      <aside class="panel hero-card">
+        <div id="ollama-status" class="status-pill">
+          <span class="status-dot"></span>
+          <span>Checking Ollama connection…</span>
+        </div>
+        <div class="meta-list">
+          <div class="meta-item"><span>Default questions</span><strong id="default-questions">{{ default_questions }}</strong></div>
+          <div class="meta-item"><span>PDF render DPI</span><strong id="default-dpi">{{ default_dpi }}</strong></div>
+          <div class="meta-item"><span>Ollama host</span><strong id="default-host">{{ default_ollama_host }}</strong></div>
+        </div>
+        <div class="callout">
+          <strong>First-time setup</strong>
+          Install Ollama, run <code>ollama serve</code>, and pull a local model before you grade your first class.
+        </div>
+      </aside>
+    </section>
+
+    <section class="workspace">
+      <section class="panel">
+        <h2>Start a grading run</h2>
+        <p>Designed for teachers: one scheme file, one folder path, one model, one button.</p>
+
+        <form id="grading-form" class="grid">
+          <div id="form-message" class="message"></div>
+
+          <div class="field">
+            <label for="scheme">Marking scheme</label>
+            <input id="scheme" name="scheme" type="file" required>
+          </div>
+
+          <div class="field">
+            <label for="submissions_path">Submissions folder path</label>
+            <input
+              id="submissions_path"
+              name="submissions_path"
+              type="text"
+              placeholder="C:\Users\Teacher\Documents\Submissions"
+              required
+            >
+          </div>
+
+          <div class="field">
+            <label for="model">Ollama model</label>
+            <select id="model" name="model" required>
+              <option value="">Loading models…</option>
+            </select>
+          </div>
+
+          <details>
+            <summary>Advanced</summary>
+            <div class="inline-grid">
+              <div class="field">
+                <label for="questions">Questions</label>
+                <input id="questions" name="questions" type="text" value="{{ default_questions }}">
+              </div>
+              <div class="field">
+                <label for="dpi">PDF DPI</label>
+                <input id="dpi" name="dpi" type="number" min="72" max="300" step="1" value="{{ default_dpi }}">
+              </div>
+            </div>
+          </details>
+
+          <button id="submit-button" class="cta" type="submit">Mark submissions</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Live progress</h2>
+        <p>Watch the batch as each student is processed. Red rows mean manual review is recommended.</p>
+
+        <div id="progress-panel" class="progress">
+          <div id="progress-message" class="message info active">Preparing your grading run…</div>
+          <div class="tracker"><span id="progress-bar"></span></div>
+          <div class="microcopy" id="progress-summary">Waiting to start.</div>
+
+          <div class="stream-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Marks</th>
+                  <th>Total</th>
+                  <th>Mode</th>
+                </tr>
+              </thead>
+              <tbody id="results-body"></tbody>
+            </table>
+          </div>
+
+          <div id="downloads" class="downloads"></div>
+          <button id="reset-button" class="ghost-button" type="button">Grade another batch</button>
+        </div>
+
+        <div class="callout">
+          <strong>Download note</strong>
+          When grading is complete, use the download buttons here. Files will save to your browser's normal download location.
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const elements = {
+      form: document.getElementById("grading-form"),
+      scheme: document.getElementById("scheme"),
+      model: document.getElementById("model"),
+      submit: document.getElementById("submit-button"),
+      reset: document.getElementById("reset-button"),
+      formMessage: document.getElementById("form-message"),
+      progressPanel: document.getElementById("progress-panel"),
+      progressMessage: document.getElementById("progress-message"),
+      progressBar: document.getElementById("progress-bar"),
+      progressSummary: document.getElementById("progress-summary"),
+      resultsBody: document.getElementById("results-body"),
+      downloads: document.getElementById("downloads"),
+      ollamaStatus: document.getElementById("ollama-status"),
+    };
+
+    const csrfToken = "{{ csrf_token }}";
+    let activeStream = null;
+    let currentJobId = null;
+    let lastSeenEventId = null;
+    let reconnectTimer = null;
+    let reconnectAttempts = 0;
+    let jobTerminal = true;
+
+    function setMessage(node, kind, text) {
+      node.className = `message ${kind} active`;
+      node.textContent = text;
+    }
+
+    function clearMessage(node) {
+      node.className = "message";
+      node.textContent = "";
+    }
+
+    function setOllamaStatus(ok, text) {
+      elements.ollamaStatus.className = ok ? "status-pill status-ok" : "status-pill status-bad";
+      elements.ollamaStatus.replaceChildren();
+
+      const dot = document.createElement("span");
+      dot.className = "status-dot";
+
+      const label = document.createElement("span");
+      label.textContent = text;
+
+      elements.ollamaStatus.append(dot, label);
+    }
+
+    function resetProgress() {
+      if (!jobTerminal) {
+        return;
+      }
+      if (reconnectTimer) {
+        window.clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+      elements.progressPanel.classList.remove("active");
+      elements.progressBar.style.width = "0%";
+      elements.progressSummary.textContent = "Waiting to start.";
+      elements.resultsBody.innerHTML = "";
+      elements.downloads.innerHTML = "";
+      setMessage(elements.progressMessage, "info", "Preparing your grading run…");
+      clearMessage(elements.formMessage);
+      elements.submit.disabled = false;
+      elements.reset.disabled = true;
+      currentJobId = null;
+      lastSeenEventId = null;
+      reconnectAttempts = 0;
+      if (activeStream) {
+        activeStream.close();
+        activeStream = null;
+      }
+    }
+
+    async function loadModels() {
+      try {
+        const response = await fetch("/api/models");
+        const payload = await response.json();
+        elements.model.innerHTML = "";
+
+        if (!payload.ok) {
+          setOllamaStatus(false, payload.message || "Ollama is not ready yet.");
+          elements.model.innerHTML = '<option value="">No model available</option>';
+          return;
+        }
+
+        setOllamaStatus(true, payload.models.length ? `Ready — ${payload.models.length} model(s) found` : "Connected, but no model is installed");
+
+        if (!payload.models.length) {
+          elements.model.innerHTML = '<option value="">No model installed</option>';
+          return;
+        }
+
+        for (const model of payload.models) {
+          const option = document.createElement("option");
+          option.value = model;
+          option.textContent = model;
+          elements.model.append(option);
+        }
+      } catch (error) {
+        elements.model.innerHTML = '<option value="">Cannot load models</option>';
+        setOllamaStatus(false, "Cannot reach Ollama. Start it before grading.");
+      }
+    }
+
+    function appendProgressRow(event) {
+      const row = document.createElement("tr");
+      if (event.flagged) {
+        row.classList.add("flagged");
+      }
+
+      const studentCell = document.createElement("td");
+      const studentId = document.createElement("strong");
+      studentId.textContent = event.student_id;
+      studentCell.append(studentId, document.createElement("br"), document.createTextNode(event.name));
+
+      const marksCell = document.createElement("td");
+      marksCell.textContent = Object.entries(event.marks)
+        .map(([question, mark]) => `${question}: ${mark}`)
+        .join(" · ");
+
+      const totalCell = document.createElement("td");
+      totalCell.textContent = String(event.total);
+
+      const modeCell = document.createElement("td");
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = event.mode;
+      modeCell.append(tag);
+
+      row.append(studentCell, marksCell, totalCell, modeCell);
+      elements.resultsBody.append(row);
+    }
+
+    function enterRecoverableStreamError(message) {
+      jobTerminal = true;
+      elements.submit.disabled = false;
+      elements.reset.disabled = false;
+      setMessage(elements.progressMessage, "error", message);
+    }
+
+    function openStream(jobId, isReconnect = false) {
+      currentJobId = jobId;
+      if (!isReconnect) {
+        reconnectAttempts = 0;
+        lastSeenEventId = null;
+      }
+      const streamUrl = lastSeenEventId === null
+        ? `/api/jobs/${jobId}/stream`
+        : `/api/jobs/${jobId}/stream?last_event_id=${encodeURIComponent(lastSeenEventId)}`;
+
+      activeStream = new EventSource(streamUrl);
+
+      activeStream.onmessage = (message) => {
+        const event = JSON.parse(message.data);
+        lastSeenEventId = message.lastEventId || event.id || lastSeenEventId;
+        reconnectAttempts = 0;
+
+        if (event.type === "init") {
+          elements.progressSummary.textContent = `Preparing ${event.total_submissions} submission(s) with ${event.model}.`;
+          return;
+        }
+
+        if (event.type === "progress") {
+          const percent = event.total_submissions ? (event.current / event.total_submissions) * 100 : 0;
+          elements.progressBar.style.width = `${percent}%`;
+          elements.progressSummary.textContent = `Grading ${event.current} of ${event.total_submissions} submissions…`;
+          setMessage(
+            elements.progressMessage,
+            event.flagged ? "error" : "info",
+            event.flagged
+              ? `${event.student_id} needs manual review.`
+              : `${event.student_id} graded successfully.`
+          );
+          appendProgressRow(event);
+          return;
+        }
+
+        if (event.type === "done") {
+          jobTerminal = true;
+          currentJobId = null;
+          lastSeenEventId = null;
+          elements.progressBar.style.width = "100%";
+          elements.progressSummary.textContent = `Finished: ${event.graded} graded, ${event.failed} flagged for review.`;
+          setMessage(elements.progressMessage, "ok", "Grading finished. Download your files below.");
+          elements.reset.disabled = false;
+          elements.downloads.innerHTML = "";
+          for (const file of event.files) {
+            const link = document.createElement("a");
+            link.href = file.url;
+            link.textContent = `Download ${file.name}`;
+            elements.downloads.append(link);
+          }
+          activeStream.close();
+          activeStream = null;
+          elements.submit.disabled = false;
+          return;
+        }
+
+        if (event.type === "error") {
+          jobTerminal = true;
+          currentJobId = null;
+          lastSeenEventId = null;
+          setMessage(elements.progressMessage, "error", event.message || "Grading failed.");
+          elements.progressSummary.textContent = "The grading run stopped before completion.";
+          elements.reset.disabled = false;
+          activeStream.close();
+          activeStream = null;
+          elements.submit.disabled = false;
+        }
+      };
+
+      activeStream.onerror = () => {
+        if (activeStream) {
+          activeStream.close();
+          activeStream = null;
+        }
+
+        if (jobTerminal || !currentJobId) {
+          return;
+        }
+
+        if (reconnectAttempts < 3) {
+          reconnectAttempts += 1;
+          const delay = reconnectAttempts * 1500;
+          setMessage(
+            elements.progressMessage,
+            "info",
+            `Lost connection to the grading stream. Reconnecting${reconnectAttempts < 3 ? "…" : ""}`
+          );
+          reconnectTimer = window.setTimeout(() => {
+            reconnectTimer = null;
+            openStream(currentJobId, true);
+          }, delay);
+          return;
+        }
+
+        enterRecoverableStreamError(
+          "Lost connection to the grading stream. You can reset the page and try again."
+        );
+      };
+    }
+
+    elements.form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearMessage(elements.formMessage);
+      elements.progressPanel.classList.add("active");
+      jobTerminal = false;
+      elements.resultsBody.innerHTML = "";
+      elements.downloads.innerHTML = "";
+      elements.progressBar.style.width = "0%";
+      setMessage(elements.progressMessage, "info", "Starting your grading run…");
+      elements.progressSummary.textContent = "Preparing files and checking Ollama.";
+      elements.submit.disabled = true;
+      elements.reset.disabled = true;
+
+      const formData = new FormData(elements.form);
+
+      try {
+        const response = await fetch("/api/jobs", {
+          method: "POST",
+          headers: {
+            "X-CSRF-Token": csrfToken,
+          },
+          body: formData,
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.message || "Could not start grading.");
+        }
+
+        openStream(payload.job_id);
+      } catch (error) {
+        setMessage(elements.formMessage, "error", error.message || "Could not start grading.");
+        setMessage(elements.progressMessage, "error", error.message || "Could not start grading.");
+        elements.submit.disabled = false;
+      }
+    });
+
+    elements.reset.addEventListener("click", resetProgress);
+
+    resetProgress();
+    loadModels();
+  </script>
+</body>
+</html>

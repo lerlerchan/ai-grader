@@ -3,3 +3,4 @@ ollama
 openpyxl
 click
 markitdown
+flask

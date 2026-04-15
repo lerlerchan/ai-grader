@@ -19,11 +19,27 @@ dependencies = [
     "openpyxl",
     "click",
     "markitdown",
+    "flask",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8,<9",
+]
+release = [
+    "pyinstaller>=6,<7",
 ]
 
 [project.scripts]
 ai-grader = "ai_grader.cli:main"
+ai-grader-gui = "ai_grader.launcher:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["ai_grader*"]
+
+[tool.setuptools.package-data]
+ai_grader = ["templates/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
