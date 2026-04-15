@@ -1,0 +1,128 @@
+{
+  "mcpServers": {
+    "ollama-mcp": {
+      "command": "python",
+      "args": ["-m", "mcp", "run", "mcp_servers/ollama_server.py"],
+      "env": {
+        "OLLAMA_HOST": "http://localhost:11434"
+      },
+      "description": "MCP server for interacting with local Ollama models. Provides tools for model management and text generation.",
+      "tools": [
+        {
+          "name": "check_health",
+          "description": "Verify Ollama connectivity and health. Checks if the Ollama instance is running and accessible at the configured host."
+        },
+        {
+          "name": "list_models",
+          "description": "List all available models on the Ollama instance. Returns model names, sizes, and modification timestamps."
+        },
+        {
+          "name": "generate_text",
+          "description": "Send a prompt to an Ollama model and get a text response. Supports sampling parameters (temperature, top_k, top_p).",
+          "parameters": {
+            "model": "Name of the model to use (e.g., 'gemma4:12b')",
+            "prompt": "The input prompt or question",
+            "temperature": "Sampling temperature (0.0-1.0, controls randomness) - optional",
+            "top_k": "Number of top tokens to consider - optional",
+            "top_p": "Nucleus sampling parameter - optional"
+          }
+        },
+        {
+          "name": "chat",
+          "description": "Send a chat message with system and user context to an Ollama model. Maintains system prompts for consistent behavior.",
+          "parameters": {
+            "model": "Name of the model to use (e.g., 'gemma4:12b')",
+            "system": "System prompt that defines the assistant's behavior",
+            "user_message": "The user's message or question",
+            "temperature": "Sampling temperature (0.0-1.0) - optional"
+          }
+        },
+        {
+          "name": "pull_model",
+          "description": "Pull (download) a model from Ollama's registry to the local instance. May take several minutes for large models.",
+          "parameters": {
+            "model": "Name of the model to pull (e.g., 'gemma4:12b', 'llama2:7b')"
+          }
+        }
+      ],
+      "setup": {
+        "prerequisites": [
+          "Python 3.9+ installed",
+          "Ollama installed and running: `ollama serve`",
+          "FastMCP and ollama Python packages installed via requirements.txt"
+        ],
+        "environment": "OLLAMA_HOST defaults to http://localhost:11434. Override with environment variable if Ollama runs on different host/port.",
+        "startup": "Ollama server must be running before invoking this MCP server. Start with: ollama serve"
+      }
+    },
+    "playwright-mcp": {
+      "command": "node",
+      "args": ["mcp_servers/playwright/dist/index.js"],
+      "description": "MCP server for browser automation with Playwright. Provides tools for web navigation, interaction, and content extraction.",
+      "tools": [
+        {
+          "name": "navigate",
+          "description": "Navigate to a URL in the browser. Opens the URL and waits for the page to load.",
+          "parameters": {
+            "url": "The URL to navigate to (e.g., https://example.com)"
+          }
+        },
+        {
+          "name": "click",
+          "description": "Click an element on the page by CSS selector. Waits for the element to be visible before clicking.",
+          "parameters": {
+            "selector": "CSS selector for the element (e.g., '#submit-btn', '.menu-item')"
+          }
+        },
+        {
+          "name": "fill_form",
+          "description": "Fill form fields (input, textarea) with values. Supports multiple fields at once.",
+          "parameters": {
+            "fields": "Object mapping CSS selectors to values (e.g., {'#username': 'john', '#password': 'secret'})"
+          }
+        },
+        {
+          "name": "screenshot",
+          "description": "Take a screenshot of the current page and return as base64-encoded PNG. Can capture full page or viewport.",
+          "parameters": {
+            "fullPage": "If true, capture the full page; if false, capture viewport only. Default: false - optional"
+          }
+        },
+        {
+          "name": "get_text",
+          "description": "Extract text content from element(s) by CSS selector. Returns an array of text strings.",
+          "parameters": {
+            "selector": "CSS selector for the element(s) (e.g., '.result', 'p')"
+          }
+        },
+        {
+          "name": "evaluate",
+          "description": "Execute JavaScript code in the context of the page and return the result. Supports full ES6 syntax.",
+          "parameters": {
+            "script": "JavaScript code to execute (e.g., 'document.title' or 'fetch(url).then(r => r.json())')"
+          }
+        }
+      ],
+      "setup": {
+        "prerequisites": [
+          "Node.js 18+ installed",
+          "Playwright dependencies installed: `npm install` in mcp_servers/playwright",
+          "TypeScript compiled to dist folder: `npm run build` in mcp_servers/playwright"
+        ],
+        "environment": "No required environment variables. Playwright uses chromium browser in headless mode.",
+        "startup": "Requires npm dependencies installed and TypeScript compiled. Run: npm install && npm run build in mcp_servers/playwright",
+        "build": "npm run build in mcp_servers/playwright to compile TypeScript to dist/index.js"
+      }
+    }
+  },
+  "documentation": {
+    "overview": "MCP server configuration for ai-grader project. Provides two MCP (Model Context Protocol) servers: Ollama for LLM interaction and Playwright for browser automation.",
+    "installation": {
+      "ollama": "1. Ensure Ollama is installed from https://ollama.ai/\n2. Start Ollama service: ollama serve\n3. Pull models as needed: ollama pull gemma4:12b",
+      "playwright": "1. Navigate to mcp_servers/playwright\n2. Run: npm install\n3. Run: npm run build"
+    },
+    "usage_ollama": "Used in ai-grader to send student submissions and marking schemes to Ollama models for automated grading.",
+    "usage_playwright": "Can be used for testing web-based assessment platforms, automated form filling, and screenshot-based submission handling.",
+    "file_format": "This configuration uses the Model Context Protocol (MCP) server format compatible with Claude and other MCP-aware clients."
+  }
+}
