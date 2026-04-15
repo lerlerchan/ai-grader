@@ -96,24 +96,27 @@ def load(submission: Submission, dpi: int = 150) -> Submission:
 def _load_pdf(submission: Submission, dpi: int) -> None:
     import fitz  # pymupdf
 
+    # Stage 1: try MarkItDown — produces clean Markdown, avoids vision tokens
+    try:
+        from markitdown import MarkItDown
+        md = MarkItDown()
+        result = md.convert(submission.path)
+        text = result.text_content.strip()
+        if len(text) >= _TEXT_THRESHOLD:
+            submission.mode = "text"
+            submission.text = text
+            return
+    except Exception:
+        pass
+
+    # Stage 2: vision mode — render pages as images (last resort)
+    submission.mode = "vision"
     doc = fitz.open(submission.path)
-
-    # Try text extraction to decide mode
-    all_text = "".join(page.get_text() for page in doc).strip()
-
-    if len(all_text) >= _TEXT_THRESHOLD:
-        submission.mode = "text"
-        submission.text = all_text
-    else:
-        submission.mode = "vision"
-        doc.close()
-        doc = fitz.open(submission.path)
-        for page in doc:
-            pix = page.get_pixmap(dpi=dpi)
-            submission.images.append(
-                base64.b64encode(pix.tobytes("png")).decode("utf-8")
-            )
-
+    for page in doc:
+        pix = page.get_pixmap(dpi=dpi)
+        submission.images.append(
+            base64.b64encode(pix.tobytes("png")).decode("utf-8")
+        )
     doc.close()
 
 
