@@ -15,7 +15,6 @@ dependencies = [
     "ollama",
     "openpyxl",
     "click",
-    "pdfplumber",
     "markitdown",
 ]
 
