@@ -71,6 +71,83 @@ Example: `John_Doe_MATH101_2026A_quiz_D240051A.pdf`
 - Both formats written to output dir (default `./output`), configurable via `--output`
 - Export format(s) configurable via `--format` (e.g., `excel,csv` or just `csv`)
 
+## MCP Servers (Optional)
+
+MCP (Model Context Protocol) servers are optional tools for development and testing. They are **not required for the main CLI** but can enhance your workflow with additional capabilities.
+
+### Overview
+
+Three MCP servers are available in `mcp_servers/`:
+
+1. **Ollama MCP Server** — Interact with Ollama directly; test grading logic, experiment with models, and engineer prompts without running the full pipeline
+2. **Playwright MCP Server** — Browser automation for testing web-based UIs (currently for future web dashboard features)
+
+**When to use**: Test a new marking scheme against different models before deploying, debug AI prompt engineering, or experiment with model responses interactively.
+
+### Ollama MCP Server
+
+**Purpose**: Direct interaction with Ollama for testing, model management, and prompt engineering.
+
+**Location**: `mcp_servers/ollama_server.py`
+
+**Startup** (from repo root):
+```bash
+python -m mcp run mcp_servers/ollama_server.py
+```
+
+**Available tools**:
+- `list_models` — List all available models in Ollama
+- `generate_text` — Generate text with a specific model
+- `chat` — Chat interface for multi-turn conversations
+- `pull_model` — Download a model from Ollama registry
+- `check_health` — Verify Ollama connection and server status
+
+**Use case example**: Test a new marking scheme against different models (e.g., `gemma4`, `llama2`) before using it in production. Use the `chat` tool to interactively refine your scheme based on model responses.
+
+### Playwright MCP Server
+
+**Purpose**: Browser automation and web testing (prepared for future web-based grading dashboard).
+
+**Location**: `mcp_servers/playwright/`
+
+**Startup** (from `mcp_servers/playwright/` directory):
+```bash
+npm run build && npm start
+```
+
+**Available tools**:
+- `navigate` — Go to a URL
+- `click` — Click an element
+- `fill_form` — Fill form fields
+- `screenshot` — Capture page screenshot
+- `get_text` — Extract text from page
+- `evaluate` — Execute JavaScript in page context
+
+**Use case example**: Test a web dashboard for grading management (future feature). Automate form submission, screenshot results, or validate UI state.
+
+### Starting MCP Servers
+
+**Helper script**:
+- Unix/Linux/macOS: `mcp_servers/start-mcp-servers.sh`
+- Windows: `mcp_servers/start-mcp-servers.ps1`
+
+**Environment variables**:
+- `OLLAMA_HOST` — Override default Ollama instance (default: `http://localhost:11434`)
+
+**Troubleshooting**:
+- **Ollama MCP**: Ensure `ollama serve` is running before starting the Ollama MCP server
+- **Playwright MCP**: Requires Node.js 18 or later
+
+### Usage in Claude
+
+Once an MCP server is running, you can interact with it in Claude Copilot:
+
+- **Test a marking scheme**: Use the Ollama MCP `chat` tool to submit your scheme and a sample submission, then refine based on AI feedback
+- **Model comparison**: Use `generate_text` with different models to compare outputs before deciding which to deploy
+- **Debug prompt engineering**: Iterate on your grading prompt in real time with the `chat` tool
+
+These tools integrate seamlessly with the main grading pipeline but are independent of it.
+
 ## Module Imports
 
 | Module | Purpose |
