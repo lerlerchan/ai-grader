@@ -9,6 +9,9 @@ description = "Local AI grading assistant for teachers — runs 100% on your mac
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+authors = [
+    { name = "Copilot", email = "223556219+Copilot@users.noreply.github.com" }
+]
 keywords = ["education", "grading", "marking", "ollama", "ai", "llm"]
 dependencies = [
     "pymupdf",
