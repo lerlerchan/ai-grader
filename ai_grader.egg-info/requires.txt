@@ -1,0 +1,6 @@
+pymupdf
+ollama
+openpyxl
+click
+pdfplumber
+markitdown
