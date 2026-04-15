@@ -1,2 +1,0 @@
-[console_scripts]
-ai-grader = ai_grader.cli:main
