@@ -1,0 +1,6 @@
+title: AI Grader — Teacher's Guide
+description: Screen-by-screen installation and usage guide for AI Grader Studio
+theme: minima
+
+plugins:
+  - jekyll-seo-tag
