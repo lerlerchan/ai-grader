@@ -94,6 +94,23 @@ def create_app(
             csrf_token=session["csrf_token"],
         )
 
+    @app.get("/api/browse-folder")
+    def api_browse_folder() -> Response:
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+
+            root = tk.Tk()
+            root.withdraw()
+            root.wm_attributes("-topmost", True)
+            path = filedialog.askdirectory(parent=root, title="Select submissions folder")
+            root.destroy()
+            if path:
+                return jsonify({"ok": True, "path": path})
+            return jsonify({"ok": False, "path": ""})
+        except Exception as exc:
+            return jsonify({"ok": False, "path": "", "message": str(exc)})
+
     @app.get("/api/models")
     def api_models() -> Response:
         try:

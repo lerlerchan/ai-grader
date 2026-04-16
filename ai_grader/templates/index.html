@@ -59,20 +59,6 @@
       overflow: hidden;
     }
 
-    .shell::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(125deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
-      transform: translateX(-100%);
-      animation: sheen 7s linear infinite;
-      pointer-events: none;
-    }
-
-    @keyframes sheen {
-      to { transform: translateX(100%); }
-    }
-
     .hero {
       display: grid;
       grid-template-columns: 1.25fr 0.95fr;
@@ -239,6 +225,35 @@
     }
 
     input::placeholder { color: rgba(241, 231, 211, 0.42); }
+
+    .browse-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .browse-row input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .browse-btn {
+      flex-shrink: 0;
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 14px 18px;
+      background: rgba(255,255,255,0.07);
+      color: var(--paper);
+      font: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 140ms ease;
+    }
+
+    .browse-btn:hover {
+      background: rgba(255,255,255,0.12);
+    }
 
     details {
       border-radius: 18px;
@@ -475,14 +490,17 @@
           </div>
 
           <div class="field">
-            <label for="submissions_path">Submissions folder path</label>
-            <input
-              id="submissions_path"
-              name="submissions_path"
-              type="text"
-              placeholder="C:\Users\Teacher\Documents\Submissions"
-              required
-            >
+            <label for="submissions_path">Submissions folder</label>
+            <div class="browse-row">
+              <input
+                id="submissions_path"
+                name="submissions_path"
+                type="text"
+                placeholder="C:\Users\Teacher\Documents\Submissions"
+                required
+              >
+              <button id="browse-button" class="browse-btn" type="button">Browse…</button>
+            </div>
           </div>
 
           <div class="field">
@@ -549,6 +567,8 @@
     const elements = {
       form: document.getElementById("grading-form"),
       scheme: document.getElementById("scheme"),
+      submissionsPath: document.getElementById("submissions_path"),
+      browseButton: document.getElementById("browse-button"),
       model: document.getElementById("model"),
       submit: document.getElementById("submit-button"),
       reset: document.getElementById("reset-button"),
@@ -826,6 +846,23 @@
     });
 
     elements.reset.addEventListener("click", resetProgress);
+
+    elements.browseButton.addEventListener("click", async () => {
+      elements.browseButton.disabled = true;
+      elements.browseButton.textContent = "Opening…";
+      try {
+        const response = await fetch("/api/browse-folder");
+        const payload = await response.json();
+        if (payload.ok && payload.path) {
+          elements.submissionsPath.value = payload.path;
+        }
+      } catch (_) {
+        // silently ignore — user can still type the path
+      } finally {
+        elements.browseButton.disabled = false;
+        elements.browseButton.textContent = "Browse…";
+      }
+    });
 
     resetProgress();
     loadModels();
