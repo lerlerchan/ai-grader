@@ -1,12 +1,12 @@
 # AI Grader Studio — Teacher's Guide
 
-> Grade a full class of submissions in minutes — no data leaves your computer.
+> Grade a full class of submissions in minutes. Choose a local model or a cloud model — your choice.
 
 ---
 
 ## What is AI Grader?
 
-AI Grader is a free, local tool that reads student submissions (PDF, Word, or text files) and marks them against your marking scheme automatically. Everything runs on your own computer using a local AI model — no student data is ever sent to the internet.
+AI Grader is a free tool that reads student submissions (PDF, Word, or text files) and marks them against your marking scheme automatically. It works with **local AI models** (runs entirely on your computer) or **cloud AI models** via Ollama (processed in the cloud, no setup needed for large models).
 
 ---
 
@@ -59,6 +59,8 @@ ollama pull gemma3:12b
 This downloads about 8 GB. Wait for it to finish before continuing.
 
 > **Tip:** You only need to do steps 1–2 once. After that, just run `ollama serve` each time before grading.
+
+> **Low-end computer?** Skip the `ollama pull` step entirely and use a **cloud model** instead (see [Choosing a Model](#choosing-a-model) below). Cloud models run on Ollama's servers — your computer only needs to run Ollama itself, not the full AI.
 
 ---
 
@@ -133,12 +135,20 @@ C:\Users\YourName\Documents\Class12A\Submissions
 > Example: `JohnSmith_CS101_2025_Assignment1_12345.pdf`
 > Files that don't match this pattern are still processed — the full filename is used as the student name.
 
-#### 3. Ollama model
+#### 3. Ollama model {#choosing-a-model}
 
-Choose a model from the dropdown. The dropdown is populated automatically from your installed Ollama models.
+Choose a model from the dropdown. The dropdown is populated automatically from your Ollama models (local and cloud).
 
-- `gemma3:12b` — good balance of speed and accuracy
-- Larger models (27b+) give better marks but are slower
+| Model | Type | Computer needed | Quality |
+|---|---|---|---|
+| `gemma3:12b` | Local | 8 GB RAM + 8 GB disk | Good |
+| `gemma3:27b` | Local | 16 GB RAM + 16 GB disk | Better |
+| `gemma4:12b-cloud` | ☁️ Cloud | Any — runs on Ollama servers | Good |
+| `gemma4:31b-cloud` | ☁️ Cloud | Any — runs on Ollama servers | Excellent |
+
+**Cloud models** (marked ☁️) do not need to be downloaded. If you select one that is not yet set up, AI Grader will download it automatically and show a progress message before grading starts.
+
+> **Recommended for most teachers:** `gemma4:31b-cloud` — no large download, excellent marking quality.
 
 #### 4. Advanced settings (optional)
 
@@ -160,7 +170,7 @@ Click **Mark submissions**. The button will grey out and the right panel switche
 While grading is running you will see:
 
 - A **progress bar** showing how many submissions have been processed
-- A **status message** updating after each student
+- A **status message** updating after each student — if a cloud model is being set up for the first time, you will see *"Downloading model from Ollama — this may take a few minutes…"* before grading begins
 - A **results table** with one row per student:
 
 | Column | Meaning |
@@ -196,9 +206,10 @@ Click **Grade another batch** to reset the form and start a new run without rest
 | Problem | What to check |
 |---|---|
 | Red dot — "Cannot reach Ollama" | Run `ollama serve` in a terminal, then refresh the page |
-| No models in dropdown | Run `ollama pull gemma3:12b` then refresh |
+| No models in dropdown | Run `ollama pull gemma3:12b` then refresh — or use a cloud model |
+| Cloud model download stuck | Check your internet connection; Ollama must be running (`ollama serve`) |
 | Browse button does nothing | Tkinter may be missing — type the folder path manually instead |
-| Many red rows in results | Check your marking scheme is clear; try a larger model |
+| Many red rows in results | Check your marking scheme is clear; try `gemma4:31b-cloud` for better accuracy |
 | `pip install` fails | Make sure Python is in PATH (re-run installer, tick "Add to PATH") |
 | App won't start after install | Close and reopen the terminal, then try `ai-grader-gui` again |
 
@@ -228,7 +239,9 @@ ai-grader mark --help
 
 ## Privacy
 
-All processing happens on your own machine. No student data, submission content, or marking results are ever sent to the internet. Ollama runs the AI model locally.
+**Local models:** All processing happens on your own machine. No data leaves your computer.
+
+**Cloud models:** When using a cloud model (e.g. `gemma4:31b-cloud`), submission content is sent to Ollama's cloud servers for processing. Do not use cloud models if your institution's policy prohibits sending student work to external services. For maximum privacy, use a local model.
 
 ---
 
