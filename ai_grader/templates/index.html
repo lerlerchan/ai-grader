@@ -723,6 +723,17 @@
         lastSeenEventId = message.lastEventId || event.id || lastSeenEventId;
         reconnectAttempts = 0;
 
+        if (event.type === "pulling") {
+          setMessage(elements.progressMessage, "info", event.message);
+          elements.progressSummary.textContent = "Please wait — downloading model from Ollama cloud…";
+          return;
+        }
+
+        if (event.type === "pull_done") {
+          setMessage(elements.progressMessage, "ok", event.message);
+          return;
+        }
+
         if (event.type === "init") {
           elements.progressSummary.textContent = `Preparing ${event.total_submissions} submission(s) with ${event.model}.`;
           return;

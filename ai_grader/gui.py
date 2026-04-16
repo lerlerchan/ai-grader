@@ -284,17 +284,15 @@ def _run_job(
     try:
         available_models = _list_model_names(app)
         if model not in available_models:
-            _emit(
-                job,
-                {
-                    "type": "error",
-                    "message": (
-                        f"Model '{model}' is not available. "
-                        f"Available models: {', '.join(available_models) or 'none'}"
-                    ),
-                },
-            )
-            return
+            _emit(job, {"type": "pulling", "message": f"Model '{model}' not found locally. Downloading from Ollama — this may take a few minutes…"})
+            try:
+                client_factory = app.config["OLLAMA_CLIENT_FACTORY"]
+                client = client_factory(host=app.config["DEFAULT_OLLAMA_HOST"])
+                client.pull(model)
+            except Exception as pull_exc:
+                _emit(job, {"type": "error", "message": f"Could not download '{model}': {pull_exc}"})
+                return
+            _emit(job, {"type": "pull_done", "message": f"'{model}' downloaded. Starting grading…"})
 
         scheme_text = app.config["LOAD_SCHEME"](scheme_path)
         submissions = app.config["DISCOVER"](submissions_path)
