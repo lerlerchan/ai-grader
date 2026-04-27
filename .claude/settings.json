@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/lerler/github/ai-grader/.claude/hooks/guard-destructive.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/lerler/github/ai-grader/.claude/hooks/lint-on-save.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
