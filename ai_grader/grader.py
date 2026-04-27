@@ -58,6 +58,7 @@ def grade(
     model: str,
     ollama_host: str = "http://localhost:11434",
     questions: list[str] | None = None,
+    api_key: str | None = None,
 ) -> dict:
     """
     Grade a single submission. Returns a dict:
@@ -70,7 +71,8 @@ def grade(
     question_format = "\n".join(f'    "{q}": <integer>,' for q in questions)
     reasoning_format = "\n".join(f'    "{q}": "<brief justification>",' for q in questions)
 
-    client = ollama.Client(host=ollama_host)
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+    client = ollama.Client(host=ollama_host, headers=headers)
     system = _SYSTEM_PROMPT.format(
         scheme=scheme_text,
         question_format=question_format,

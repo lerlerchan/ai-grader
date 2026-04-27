@@ -8,6 +8,7 @@ import atexit
 import ipaddress
 import json
 import os
+import re
 import secrets
 import shutil
 import tempfile
@@ -113,8 +114,9 @@ def create_app(
 
     @app.get("/api/models")
     def api_models() -> Response:
+        api_key = (request.args.get("api_key") or "").strip() or None
         try:
-            names = _list_model_names(app)
+            names = _list_model_names(app, api_key=api_key)
         except Exception as exc:
             return jsonify(
                 {
@@ -129,6 +131,52 @@ def create_app(
             )
 
         return jsonify({"ok": True, "models": names, "message": ""})
+
+    @app.post("/api/detect-questions")
+    def detect_questions() -> Response:
+        scheme_file = request.files.get("scheme")
+        model = (request.form.get("model") or "").strip()
+        api_key = (request.form.get("ollama_api_key") or "").strip() or None
+
+        if not scheme_file or not scheme_file.filename:
+            return jsonify({"ok": False, "message": "No scheme file provided."}), 400
+        if not model:
+            return jsonify({"ok": False, "message": "Select a model first."}), 400
+
+        tmp_path = None
+        try:
+            suffix = Path(secure_filename(scheme_file.filename)).suffix or ".txt"
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                scheme_file.save(tmp)
+                tmp_path = tmp.name
+
+            scheme_text = app.config["LOAD_SCHEME"](tmp_path)
+            client = _make_ollama_client(app, api_key)
+            response = client.chat(
+                model=model,
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        "Read this marking scheme and identify all question labels students must answer.\n"
+                        "Return ONLY a comma-separated list, e.g.: Q1,Q2,Q3,Q4\n"
+                        "No explanation, no extra text — just the labels.\n\n"
+                        f"{scheme_text[:4000]}"
+                    ),
+                }],
+            )
+            raw = response["message"]["content"].strip()
+            labels = _extract_question_labels(raw)
+            if not labels:
+                return jsonify({"ok": False, "message": f"Could not detect questions. Model returned: {raw[:120]}"})
+            return jsonify({"ok": True, "questions": ",".join(labels)})
+        except Exception as exc:
+            return jsonify({"ok": False, "message": str(exc)}), 500
+        finally:
+            if tmp_path:
+                try:
+                    os.unlink(tmp_path)
+                except FileNotFoundError:
+                    pass
 
     @app.post("/api/jobs")
     def create_job() -> Response:
@@ -163,6 +211,8 @@ def create_app(
         if not 72 <= dpi <= 300:
             return jsonify({"ok": False, "message": "DPI must be between 72 and 300."}), 400
 
+        api_key = (request.form.get("ollama_api_key") or "").strip() or None
+
         job_id = uuid.uuid4().hex
         job_root = Path(tempfile.mkdtemp(prefix=f"job-{job_id}-", dir=_app_temp_root()))
         job = JobState(job_root=str(job_root))
@@ -178,7 +228,7 @@ def create_app(
 
         thread = app.config["THREAD_FACTORY"](
             target=_run_job,
-            args=(app, job_id, str(scheme_path), submissions_path, model, questions, dpi, str(output_dir)),
+            args=(app, job_id, str(scheme_path), submissions_path, model, questions, dpi, str(output_dir), api_key),
             daemon=True,
         )
         thread.start()
@@ -277,17 +327,17 @@ def _run_job(
     questions: list[str],
     dpi: int,
     output_dir: str,
+    api_key: str | None = None,
 ) -> None:
     with app.extensions["jobs_lock"]:
         job = app.extensions["jobs"][job_id]
 
     try:
-        available_models = _list_model_names(app)
+        available_models = _list_model_names(app, api_key=api_key)
         if model not in available_models:
             _emit(job, {"type": "pulling", "message": f"Model '{model}' not found locally. Downloading from Ollama — this may take a few minutes…"})
             try:
-                client_factory = app.config["OLLAMA_CLIENT_FACTORY"]
-                client = client_factory(host=app.config["DEFAULT_OLLAMA_HOST"])
+                client = _make_ollama_client(app, api_key)
                 client.pull(model)
             except Exception as pull_exc:
                 _emit(job, {"type": "error", "message": f"Could not download '{model}': {pull_exc}"})
@@ -326,6 +376,7 @@ def _run_job(
                     model,
                     app.config["DEFAULT_OLLAMA_HOST"],
                     questions,
+                    api_key,
                 )
                 result = {
                     "student_id": submission.student_id,
@@ -403,9 +454,22 @@ def _normalize_questions(raw: str) -> list[str]:
     return [question.strip().upper() for question in raw.split(",") if question.strip()]
 
 
-def _list_model_names(app: Flask) -> list[str]:
-    client_factory: Callable[..., Any] = app.config["OLLAMA_CLIENT_FACTORY"]
-    client = client_factory(host=app.config["DEFAULT_OLLAMA_HOST"])
+def _make_ollama_client(app: Flask, api_key: str | None = None) -> Any:
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+    return app.config["OLLAMA_CLIENT_FACTORY"](host=app.config["DEFAULT_OLLAMA_HOST"], headers=headers)
+
+
+def _extract_question_labels(raw: str) -> list[str]:
+    labels = []
+    for token in re.split(r"[,\s\n]+", raw):
+        token = token.strip().upper().rstrip(".")
+        if re.match(r"^[A-Z]{1,3}[0-9]{1,2}[A-Z]?$", token):
+            labels.append(token)
+    return labels
+
+
+def _list_model_names(app: Flask, api_key: str | None = None) -> list[str]:
+    client = _make_ollama_client(app, api_key)
     response = client.list()
 
     if isinstance(response, dict):

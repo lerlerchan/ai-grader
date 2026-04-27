@@ -1,17 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="brown">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI Grader Studio</title>
   <style>
+    /* ── Brown (dark) theme — default ─────────────────────────── */
     :root {
       --ink: #f5f0e5;
       --muted: #c1b6a0;
       --paper: #f1e7d3;
-      --noir: #171411;
       --panel: rgba(36, 27, 18, 0.74);
-      --panel-strong: rgba(27, 20, 13, 0.9);
       --line: rgba(241, 231, 211, 0.14);
       --accent: #ffad42;
       --accent-2: #f97352;
@@ -19,6 +18,90 @@
       --bad: #ff8d7c;
       --shadow: 0 32px 90px rgba(0, 0, 0, 0.35);
       --radius: 28px;
+
+      --body-bg: linear-gradient(135deg, #15110e 0%, #24160f 48%, #0f0d0b 100%);
+      --body-glow-1: rgba(255, 173, 66, 0.14);
+      --body-glow-2: rgba(249, 115, 82, 0.18);
+      --grid-color: rgba(255,255,255,0.03);
+      --shell-bg: linear-gradient(180deg, rgba(30, 22, 15, 0.88), rgba(17, 13, 10, 0.96));
+      --input-bg: rgba(255,255,255,0.05);
+      --input-border: rgba(255,255,255,0.1);
+      --input-placeholder: rgba(241, 231, 211, 0.42);
+      --browse-bg: rgba(255,255,255,0.07);
+      --browse-border: rgba(255,255,255,0.15);
+      --browse-hover: rgba(255,255,255,0.12);
+      --details-bg: rgba(255,255,255,0.03);
+      --details-border: rgba(255,255,255,0.09);
+      --callout-bg: rgba(255,255,255,0.04);
+      --callout-border: rgba(255,255,255,0.08);
+      --tracker-bg: rgba(255,255,255,0.06);
+      --tracker-border: rgba(255,255,255,0.08);
+      --stream-bg: rgba(0,0,0,0.18);
+      --stream-border: rgba(255,255,255,0.08);
+      --th-bg: rgba(20, 15, 10, 0.95);
+      --td-border: rgba(255,255,255,0.06);
+      --flagged-bg: rgba(255, 141, 124, 0.08);
+      --tag-bg: rgba(255,255,255,0.08);
+      --dl-bg: rgba(255,255,255,0.05);
+      --dl-border: rgba(255,255,255,0.12);
+      --status-bg: rgba(255,255,255,0.05);
+      --status-border: rgba(255,255,255,0.08);
+      --msg-border: rgba(255,255,255,0.1);
+      --msg-ok-bg: rgba(125, 222, 138, 0.08);
+      --msg-ok-color: #dff7e4;
+      --msg-err-bg: rgba(255, 141, 124, 0.1);
+      --msg-err-color: #ffd8d0;
+      --msg-info-bg: rgba(255,255,255,0.05);
+      --cta-text: #22160d;
+    }
+
+    /* ── Light (cream) theme ───────────────────────────────────── */
+    [data-theme="light"] {
+      --ink: #2c1a0e;
+      --muted: #8a6d54;
+      --paper: #3d2410;
+      --panel: rgba(255, 248, 235, 0.92);
+      --line: rgba(60, 30, 10, 0.14);
+      --accent: #c07010;
+      --accent-2: #b84020;
+      --good: #2a7a38;
+      --bad: #c03028;
+      --shadow: 0 32px 90px rgba(0,0,0,0.12);
+
+      --body-bg: linear-gradient(135deg, #faf3e8 0%, #f5e4c8 48%, #fdf7ee 100%);
+      --body-glow-1: rgba(192, 112, 16, 0.10);
+      --body-glow-2: rgba(184, 64, 32, 0.10);
+      --grid-color: rgba(0,0,0,0.025);
+      --shell-bg: linear-gradient(180deg, rgba(255, 248, 235, 0.94), rgba(255, 243, 222, 0.98));
+      --input-bg: rgba(0,0,0,0.04);
+      --input-border: rgba(60,30,10,0.18);
+      --input-placeholder: rgba(60, 30, 10, 0.35);
+      --browse-bg: rgba(0,0,0,0.05);
+      --browse-border: rgba(60,30,10,0.2);
+      --browse-hover: rgba(0,0,0,0.09);
+      --details-bg: rgba(0,0,0,0.02);
+      --details-border: rgba(60,30,10,0.12);
+      --callout-bg: rgba(192,112,16,0.07);
+      --callout-border: rgba(192,112,16,0.18);
+      --tracker-bg: rgba(0,0,0,0.07);
+      --tracker-border: rgba(60,30,10,0.12);
+      --stream-bg: rgba(0,0,0,0.03);
+      --stream-border: rgba(60,30,10,0.12);
+      --th-bg: rgba(240, 225, 200, 0.98);
+      --td-border: rgba(60,30,10,0.07);
+      --flagged-bg: rgba(192,48,40,0.06);
+      --tag-bg: rgba(0,0,0,0.07);
+      --dl-bg: rgba(0,0,0,0.04);
+      --dl-border: rgba(60,30,10,0.15);
+      --status-bg: rgba(0,0,0,0.04);
+      --status-border: rgba(60,30,10,0.12);
+      --msg-border: rgba(60,30,10,0.12);
+      --msg-ok-bg: rgba(42, 122, 56, 0.08);
+      --msg-ok-color: #1a5c28;
+      --msg-err-bg: rgba(192, 48, 40, 0.08);
+      --msg-err-color: #8c1a14;
+      --msg-info-bg: rgba(0,0,0,0.03);
+      --cta-text: #faf3e8;
     }
 
     * { box-sizing: border-box; }
@@ -29,9 +112,9 @@
       font-family: Georgia, "Times New Roman", serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at top left, rgba(255, 173, 66, 0.14), transparent 36%),
-        radial-gradient(circle at bottom right, rgba(249, 115, 82, 0.18), transparent 30%),
-        linear-gradient(135deg, #15110e 0%, #24160f 48%, #0f0d0b 100%);
+        radial-gradient(circle at top left, var(--body-glow-1), transparent 36%),
+        radial-gradient(circle at bottom right, var(--body-glow-2), transparent 30%),
+        var(--body-bg);
     }
 
     body::before {
@@ -40,8 +123,8 @@
       inset: 0;
       pointer-events: none;
       background-image:
-        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
       background-size: 48px 48px;
       mask-image: radial-gradient(circle at center, black 40%, transparent 92%);
       opacity: 0.3;
@@ -54,11 +137,35 @@
       padding: 24px;
       border: 1px solid var(--line);
       border-radius: calc(var(--radius) + 8px);
-      background: linear-gradient(180deg, rgba(30, 22, 15, 0.88), rgba(17, 13, 10, 0.96));
+      background: var(--shell-bg);
       box-shadow: var(--shadow);
       overflow: hidden;
     }
 
+    /* ── Theme toggle ─────────────────────────────────────────── */
+    .theme-btn {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 10;
+      appearance: none;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      width: 44px;
+      height: 44px;
+      background: var(--panel);
+      color: var(--paper);
+      font-size: 1.15rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 200ms, border-color 200ms;
+    }
+
+    .theme-btn:hover { border-color: var(--accent); }
+
+    /* ── Layout ───────────────────────────────────────────────── */
     .hero {
       display: grid;
       grid-template-columns: 1.25fr 0.95fr;
@@ -140,8 +247,8 @@
       padding: 10px 14px;
       border-radius: 999px;
       font-size: 0.95rem;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--status-bg);
+      border: 1px solid var(--status-border);
     }
 
     .status-dot {
@@ -155,10 +262,7 @@
     .status-ok .status-dot { background: var(--good); box-shadow: 0 0 0 8px rgba(125, 222, 138, 0.12); }
     .status-bad .status-dot { background: var(--bad); box-shadow: 0 0 0 8px rgba(255, 141, 124, 0.12); }
 
-    .meta-list {
-      display: grid;
-      gap: 12px;
-    }
+    .meta-list { display: grid; gap: 12px; }
 
     .meta-item {
       display: flex;
@@ -177,9 +281,7 @@
       gap: 24px;
     }
 
-    .panel {
-      padding: 26px;
-    }
+    .panel { padding: 26px; }
 
     .panel h2 {
       margin: 0 0 8px;
@@ -194,15 +296,8 @@
       color: var(--muted);
     }
 
-    .grid {
-      display: grid;
-      gap: 16px;
-    }
-
-    .field {
-      display: grid;
-      gap: 8px;
-    }
+    .grid { display: grid; gap: 16px; }
+    .field { display: grid; gap: 8px; }
 
     label {
       font-size: 0.85rem;
@@ -213,36 +308,30 @@
 
     input[type="text"],
     input[type="number"],
+    input[type="password"],
     input[type="file"],
     select {
       width: 100%;
       padding: 14px 16px;
       border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
       color: var(--ink);
       font: inherit;
     }
 
-    input::placeholder { color: rgba(241, 231, 211, 0.42); }
+    input::placeholder { color: var(--input-placeholder); }
 
-    .browse-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .browse-row input {
-      flex: 1;
-      min-width: 0;
-    }
+    .browse-row { display: flex; gap: 10px; }
+    .browse-row input { flex: 1; min-width: 0; }
 
     .browse-btn {
       flex-shrink: 0;
       appearance: none;
-      border: 1px solid rgba(255,255,255,0.15);
+      border: 1px solid var(--browse-border);
       border-radius: 16px;
       padding: 14px 18px;
-      background: rgba(255,255,255,0.07);
+      background: var(--browse-bg);
       color: var(--paper);
       font: inherit;
       font-size: 0.9rem;
@@ -251,14 +340,12 @@
       transition: background 140ms ease;
     }
 
-    .browse-btn:hover {
-      background: rgba(255,255,255,0.12);
-    }
+    .browse-btn:hover { background: var(--browse-hover); }
 
     details {
       border-radius: 18px;
-      border: 1px solid rgba(255,255,255,0.09);
-      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--details-border);
+      background: var(--details-bg);
       padding: 0 16px 16px;
     }
 
@@ -280,6 +367,29 @@
       gap: 16px;
     }
 
+    /* Questions row: input + detect button */
+    .questions-row { display: flex; gap: 10px; align-items: end; }
+    .questions-row .field { flex: 1; min-width: 0; }
+
+    .detect-btn {
+      flex-shrink: 0;
+      appearance: none;
+      border: 1px solid var(--browse-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: var(--browse-bg);
+      color: var(--paper);
+      font: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 140ms ease;
+      letter-spacing: 0.06em;
+    }
+
+    .detect-btn:hover { background: var(--browse-hover); }
+    .detect-btn:disabled { opacity: 0.55; cursor: wait; }
+
     .cta {
       appearance: none;
       border: 0;
@@ -291,11 +401,16 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #22160d;
+      color: var(--cta-text);
       background: linear-gradient(135deg, var(--accent), #ffd59c);
       cursor: pointer;
       transition: transform 160ms ease, box-shadow 160ms ease;
       box-shadow: 0 16px 40px rgba(255, 173, 66, 0.2);
+    }
+
+    [data-theme="light"] .cta {
+      background: linear-gradient(135deg, var(--accent), #e09030);
+      box-shadow: 0 16px 40px rgba(192, 112, 16, 0.2);
     }
 
     .cta:hover {
@@ -310,17 +425,13 @@
       box-shadow: none;
     }
 
-    .microcopy {
-      font-size: 0.92rem;
-      color: var(--muted);
-      line-height: 1.6;
-    }
+    .microcopy { font-size: 0.92rem; color: var(--muted); line-height: 1.6; }
 
     .callout {
       padding: 16px 18px;
       border-radius: 18px;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--callout-border);
+      background: var(--callout-bg);
     }
 
     .callout strong {
@@ -330,11 +441,7 @@
       color: var(--paper);
     }
 
-    .progress {
-      display: none;
-      gap: 18px;
-    }
-
+    .progress { display: none; gap: 18px; }
     .progress.active { display: grid; }
 
     .tracker {
@@ -342,8 +449,8 @@
       height: 14px;
       border-radius: 999px;
       overflow: hidden;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--tracker-bg);
+      border: 1px solid var(--tracker-border);
     }
 
     .tracker > span {
@@ -358,20 +465,16 @@
       max-height: 420px;
       overflow: auto;
       border-radius: 18px;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(0,0,0,0.18);
+      border: 1px solid var(--stream-border);
+      background: var(--stream-bg);
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.95rem;
-    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
 
     th, td {
       padding: 14px;
       text-align: left;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid var(--td-border);
       vertical-align: top;
     }
 
@@ -379,16 +482,14 @@
       position: sticky;
       top: 0;
       z-index: 1;
-      background: rgba(20, 15, 10, 0.95);
+      background: var(--th-bg);
       color: var(--paper);
       letter-spacing: 0.1em;
       text-transform: uppercase;
       font-size: 0.78rem;
     }
 
-    tr.flagged td {
-      background: rgba(255, 141, 124, 0.08);
-    }
+    tr.flagged td { background: var(--flagged-bg); }
 
     .tag {
       display: inline-flex;
@@ -398,16 +499,11 @@
       font-size: 0.78rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      background: rgba(255,255,255,0.08);
+      background: var(--tag-bg);
       color: var(--paper);
     }
 
-    .downloads {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 6px;
-    }
+    .downloads { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
 
     .downloads a, .ghost-button {
       display: inline-flex;
@@ -416,30 +512,28 @@
       min-width: 170px;
       padding: 12px 16px;
       border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--dl-border);
+      background: var(--dl-bg);
       color: var(--paper);
       text-decoration: none;
       cursor: pointer;
       font: inherit;
     }
 
-    .ghost-button {
-      margin-top: 10px;
-    }
+    .ghost-button { margin-top: 10px; }
 
     .message {
       display: none;
       padding: 14px 16px;
       border-radius: 16px;
       line-height: 1.5;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid var(--msg-border);
     }
 
     .message.active { display: block; }
-    .message.ok { background: rgba(125, 222, 138, 0.08); color: #dff7e4; }
-    .message.error { background: rgba(255, 141, 124, 0.1); color: #ffd8d0; }
-    .message.info { background: rgba(255,255,255,0.05); color: var(--paper); }
+    .message.ok { background: var(--msg-ok-bg); color: var(--msg-ok-color); }
+    .message.error { background: var(--msg-err-bg); color: var(--msg-err-color); }
+    .message.info { background: var(--msg-info-bg); color: var(--paper); }
 
     @media (max-width: 980px) {
       .hero, .workspace { grid-template-columns: 1fr; }
@@ -449,6 +543,10 @@
 </head>
 <body>
   <main class="shell">
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle theme" title="Toggle light / dark theme">
+      <span id="theme-icon">☀</span>
+    </button>
+
     <section class="hero">
       <div class="masthead">
         <div class="eyebrow">Private local marking</div>
@@ -512,15 +610,35 @@
 
           <details>
             <summary>Advanced</summary>
-            <div class="inline-grid">
+            <div class="grid" style="margin-top:4px">
+
               <div class="field">
-                <label for="questions">Questions</label>
-                <input id="questions" name="questions" type="text" value="{{ default_questions }}">
+                <label for="ollama_api_key">Ollama API key</label>
+                <input
+                  id="ollama_api_key"
+                  name="ollama_api_key"
+                  type="password"
+                  placeholder="Leave blank if not required"
+                  autocomplete="off"
+                >
               </div>
-              <div class="field">
-                <label for="dpi">PDF DPI</label>
-                <input id="dpi" name="dpi" type="number" min="72" max="300" step="1" value="{{ default_dpi }}">
+
+              <div class="inline-grid">
+                <div class="questions-row">
+                  <div class="field">
+                    <label for="questions">Questions</label>
+                    <input id="questions" name="questions" type="text" value="{{ default_questions }}">
+                  </div>
+                  <button id="detect-button" class="detect-btn" type="button" title="Auto-detect from scheme">Detect</button>
+                </div>
+                <div class="field">
+                  <label for="dpi">PDF DPI</label>
+                  <input id="dpi" name="dpi" type="number" min="72" max="300" step="1" value="{{ default_dpi }}">
+                </div>
               </div>
+
+              <div id="detect-message" class="message"></div>
+
             </div>
           </details>
 
@@ -570,6 +688,10 @@
       submissionsPath: document.getElementById("submissions_path"),
       browseButton: document.getElementById("browse-button"),
       model: document.getElementById("model"),
+      apiKey: document.getElementById("ollama_api_key"),
+      questions: document.getElementById("questions"),
+      detectButton: document.getElementById("detect-button"),
+      detectMessage: document.getElementById("detect-message"),
       submit: document.getElementById("submit-button"),
       reset: document.getElementById("reset-button"),
       formMessage: document.getElementById("form-message"),
@@ -580,6 +702,8 @@
       resultsBody: document.getElementById("results-body"),
       downloads: document.getElementById("downloads"),
       ollamaStatus: document.getElementById("ollama-status"),
+      themeToggle: document.getElementById("theme-toggle"),
+      themeIcon: document.getElementById("theme-icon"),
     };
 
     const csrfToken = "{{ csrf_token }}";
@@ -590,6 +714,24 @@
     let reconnectAttempts = 0;
     let jobTerminal = true;
 
+    /* ── Theme ─────────────────────────────────────────────────── */
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      elements.themeIcon.textContent = theme === "light" ? "🌙" : "☀";
+      localStorage.setItem("ai-grader-theme", theme);
+    }
+
+    (function initTheme() {
+      const saved = localStorage.getItem("ai-grader-theme") || "brown";
+      applyTheme(saved);
+    })();
+
+    elements.themeToggle.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme");
+      applyTheme(current === "light" ? "brown" : "light");
+    });
+
+    /* ── Helpers ───────────────────────────────────────────────── */
     function setMessage(node, kind, text) {
       node.className = `message ${kind} active`;
       node.textContent = text;
@@ -603,24 +745,16 @@
     function setOllamaStatus(ok, text) {
       elements.ollamaStatus.className = ok ? "status-pill status-ok" : "status-pill status-bad";
       elements.ollamaStatus.replaceChildren();
-
       const dot = document.createElement("span");
       dot.className = "status-dot";
-
       const label = document.createElement("span");
       label.textContent = text;
-
       elements.ollamaStatus.append(dot, label);
     }
 
     function resetProgress() {
-      if (!jobTerminal) {
-        return;
-      }
-      if (reconnectTimer) {
-        window.clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-      }
+      if (!jobTerminal) return;
+      if (reconnectTimer) { window.clearTimeout(reconnectTimer); reconnectTimer = null; }
       elements.progressPanel.classList.remove("active");
       elements.progressBar.style.width = "0%";
       elements.progressSummary.textContent = "Waiting to start.";
@@ -633,15 +767,15 @@
       currentJobId = null;
       lastSeenEventId = null;
       reconnectAttempts = 0;
-      if (activeStream) {
-        activeStream.close();
-        activeStream = null;
-      }
+      if (activeStream) { activeStream.close(); activeStream = null; }
     }
 
+    /* ── Models ────────────────────────────────────────────────── */
     async function loadModels() {
+      const key = elements.apiKey.value.trim();
+      const url = key ? `/api/models?api_key=${encodeURIComponent(key)}` : "/api/models";
       try {
-        const response = await fetch("/api/models");
+        const response = await fetch(url);
         const payload = await response.json();
         elements.model.innerHTML = "";
 
@@ -651,7 +785,9 @@
           return;
         }
 
-        setOllamaStatus(true, payload.models.length ? `Ready — ${payload.models.length} model(s) found` : "Connected, but no model is installed");
+        setOllamaStatus(true, payload.models.length
+          ? `Ready — ${payload.models.length} model(s) found`
+          : "Connected, but no model is installed");
 
         if (!payload.models.length) {
           elements.model.innerHTML = '<option value="">No model installed</option>';
@@ -664,17 +800,69 @@
           option.textContent = model;
           elements.model.append(option);
         }
-      } catch (error) {
+      } catch (_) {
         elements.model.innerHTML = '<option value="">Cannot load models</option>';
         setOllamaStatus(false, "Cannot reach Ollama. Start it before grading.");
       }
     }
 
+    /* Reload models when API key changes (debounced) */
+    let apiKeyTimer = null;
+    elements.apiKey.addEventListener("input", () => {
+      clearTimeout(apiKeyTimer);
+      apiKeyTimer = setTimeout(loadModels, 600);
+    });
+
+    /* ── Auto-detect questions ─────────────────────────────────── */
+    elements.detectButton.addEventListener("click", async () => {
+      const schemeFile = elements.scheme.files[0];
+      const model = elements.model.value.trim();
+
+      if (!schemeFile) {
+        setMessage(elements.detectMessage, "error", "Upload a marking scheme file first.");
+        return;
+      }
+      if (!model) {
+        setMessage(elements.detectMessage, "error", "Select a model first.");
+        return;
+      }
+
+      elements.detectButton.disabled = true;
+      elements.detectButton.textContent = "Detecting…";
+      clearMessage(elements.detectMessage);
+
+      try {
+        const fd = new FormData();
+        fd.append("scheme", schemeFile);
+        fd.append("model", model);
+        const key = elements.apiKey.value.trim();
+        if (key) fd.append("ollama_api_key", key);
+
+        const response = await fetch("/api/detect-questions", {
+          method: "POST",
+          headers: { "X-CSRF-Token": csrfToken },
+          body: fd,
+        });
+        const payload = await response.json();
+
+        if (payload.ok) {
+          elements.questions.value = payload.questions;
+          setMessage(elements.detectMessage, "ok", `Detected: ${payload.questions}`);
+        } else {
+          setMessage(elements.detectMessage, "error", payload.message || "Detection failed.");
+        }
+      } catch (err) {
+        setMessage(elements.detectMessage, "error", err.message || "Detection failed.");
+      } finally {
+        elements.detectButton.disabled = false;
+        elements.detectButton.textContent = "Detect";
+      }
+    });
+
+    /* ── Progress table ────────────────────────────────────────── */
     function appendProgressRow(event) {
       const row = document.createElement("tr");
-      if (event.flagged) {
-        row.classList.add("flagged");
-      }
+      if (event.flagged) row.classList.add("flagged");
 
       const studentCell = document.createElement("td");
       const studentId = document.createElement("strong");
@@ -683,7 +871,7 @@
 
       const marksCell = document.createElement("td");
       marksCell.textContent = Object.entries(event.marks)
-        .map(([question, mark]) => `${question}: ${mark}`)
+        .map(([q, m]) => `${q}: ${m}`)
         .join(" · ");
 
       const totalCell = document.createElement("td");
@@ -699,6 +887,7 @@
       elements.resultsBody.append(row);
     }
 
+    /* ── SSE stream ────────────────────────────────────────────── */
     function enterRecoverableStreamError(message) {
       jobTerminal = true;
       elements.submit.disabled = false;
@@ -708,10 +897,7 @@
 
     function openStream(jobId, isReconnect = false) {
       currentJobId = jobId;
-      if (!isReconnect) {
-        reconnectAttempts = 0;
-        lastSeenEventId = null;
-      }
+      if (!isReconnect) { reconnectAttempts = 0; lastSeenEventId = null; }
       const streamUrl = lastSeenEventId === null
         ? `/api/jobs/${jobId}/stream`
         : `/api/jobs/${jobId}/stream?last_event_id=${encodeURIComponent(lastSeenEventId)}`;
@@ -728,17 +914,14 @@
           elements.progressSummary.textContent = "Please wait — downloading model from Ollama cloud…";
           return;
         }
-
         if (event.type === "pull_done") {
           setMessage(elements.progressMessage, "ok", event.message);
           return;
         }
-
         if (event.type === "init") {
           elements.progressSummary.textContent = `Preparing ${event.total_submissions} submission(s) with ${event.model}.`;
           return;
         }
-
         if (event.type === "progress") {
           const percent = event.total_submissions ? (event.current / event.total_submissions) * 100 : 0;
           elements.progressBar.style.width = `${percent}%`;
@@ -753,7 +936,6 @@
           appendProgressRow(event);
           return;
         }
-
         if (event.type === "done") {
           jobTerminal = true;
           currentJobId = null;
@@ -774,7 +956,6 @@
           elements.submit.disabled = false;
           return;
         }
-
         if (event.type === "error") {
           jobTerminal = true;
           currentJobId = null;
@@ -789,36 +970,24 @@
       };
 
       activeStream.onerror = () => {
-        if (activeStream) {
-          activeStream.close();
-          activeStream = null;
-        }
-
-        if (jobTerminal || !currentJobId) {
-          return;
-        }
-
+        if (activeStream) { activeStream.close(); activeStream = null; }
+        if (jobTerminal || !currentJobId) return;
         if (reconnectAttempts < 3) {
-          reconnectAttempts += 1;
+          reconnectAttempts++;
           const delay = reconnectAttempts * 1500;
-          setMessage(
-            elements.progressMessage,
-            "info",
-            `Lost connection to the grading stream. Reconnecting${reconnectAttempts < 3 ? "…" : ""}`
-          );
+          setMessage(elements.progressMessage, "info",
+            `Lost connection to the grading stream. Reconnecting${reconnectAttempts < 3 ? "…" : ""}`);
           reconnectTimer = window.setTimeout(() => {
             reconnectTimer = null;
             openStream(currentJobId, true);
           }, delay);
           return;
         }
-
-        enterRecoverableStreamError(
-          "Lost connection to the grading stream. You can reset the page and try again."
-        );
+        enterRecoverableStreamError("Lost connection to the grading stream. You can reset the page and try again.");
       };
     }
 
+    /* ── Form submit ───────────────────────────────────────────── */
     elements.form.addEventListener("submit", async (event) => {
       event.preventDefault();
       clearMessage(elements.formMessage);
@@ -837,17 +1006,11 @@
       try {
         const response = await fetch("/api/jobs", {
           method: "POST",
-          headers: {
-            "X-CSRF-Token": csrfToken,
-          },
+          headers: { "X-CSRF-Token": csrfToken },
           body: formData,
         });
         const payload = await response.json();
-
-        if (!response.ok || !payload.ok) {
-          throw new Error(payload.message || "Could not start grading.");
-        }
-
+        if (!response.ok || !payload.ok) throw new Error(payload.message || "Could not start grading.");
         openStream(payload.job_id);
       } catch (error) {
         setMessage(elements.formMessage, "error", error.message || "Could not start grading.");
@@ -864,11 +1027,9 @@
       try {
         const response = await fetch("/api/browse-folder");
         const payload = await response.json();
-        if (payload.ok && payload.path) {
-          elements.submissionsPath.value = payload.path;
-        }
+        if (payload.ok && payload.path) elements.submissionsPath.value = payload.path;
       } catch (_) {
-        // silently ignore — user can still type the path
+        // user can still type the path
       } finally {
         elements.browseButton.disabled = false;
         elements.browseButton.textContent = "Browse…";
