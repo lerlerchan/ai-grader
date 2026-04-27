@@ -131,7 +131,8 @@ def mark(scheme, submissions, model, output, fmt, questions, ollama_host, dpi):
         try:
             marks = grade(sub, scheme_text, model, ollama_host, question_list)
             q_str = " ".join(f"{q}={marks.get(q, -1)}" for q in question_list)
-            total = sum(marks.get(q, -1) for q in question_list)
+            q_vals = [marks.get(q, -1) for q in question_list]
+            total = sum(q_vals) if all(v >= 0 for v in q_vals) else "ERR"
             click.echo(f" {q_str} → {total}/{len(question_list)*5}  {mode_tag}")
             result = {
                 "student_id": sub.student_id,

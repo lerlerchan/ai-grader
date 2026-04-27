@@ -20,27 +20,25 @@ Below is the official marking scheme:
 
 INSTRUCTIONS:
 - Carefully examine the student's work (images or text provided).
-- Award marks strictly according to the marking scheme above.
-- All mark values must be integers within the range shown for each question.
+- Award marks based on demonstrated understanding. Use partial credit generously \
+where the student shows partial knowledge or correct method with minor errors.
+- The submission may be handwritten and OCR-extracted; spelling errors, merged \
+words, or garbled characters do NOT count against the student — focus on \
+mathematical/conceptual correctness and intent.
+- All mark values must be non-negative integers within the range shown for each question.
 - Return ONLY a valid JSON object — no explanation outside the JSON.
 
-Required JSON format:
+Required JSON format (use exactly these question keys):
 {{
   "questions": {{
-    "Q1": <integer>,
-    "Q2": <integer>,
-    "Q3": <integer>,
-    "Q4": <integer>
+{question_format}
   }},
   "reasoning": {{
-    "Q1": "<brief justification>",
-    "Q2": "<brief justification>",
-    "Q3": "<brief justification>",
-    "Q4": "<brief justification>"
+{reasoning_format}
   }}
 }}
 
-If the student's work for a question is blank or unreadable, award 0 for that question.
+If a question is genuinely blank (no attempt at all), award 0.
 """
 
 _USER_PROMPT_VISION = (
@@ -69,8 +67,15 @@ def grade(
     if questions is None:
         questions = ["Q1", "Q2", "Q3", "Q4"]
 
+    question_format = "\n".join(f'    "{q}": <integer>,' for q in questions)
+    reasoning_format = "\n".join(f'    "{q}": "<brief justification>",' for q in questions)
+
     client = ollama.Client(host=ollama_host)
-    system = _SYSTEM_PROMPT.format(scheme=scheme_text)
+    system = _SYSTEM_PROMPT.format(
+        scheme=scheme_text,
+        question_format=question_format,
+        reasoning_format=reasoning_format,
+    )
 
     if submission.mode == "vision":
         message = {
@@ -107,8 +112,11 @@ def _parse_response(raw: str, questions: list[str]) -> dict:
             result = {}
             q_data = data.get("questions", data)
             for q in questions:
-                val = q_data.get(q, -1)
-                result[q] = int(val) if isinstance(val, (int, float)) else -1
+                val = q_data.get(q)
+                if isinstance(val, (int, float)):
+                    result[q] = max(0, int(val))
+                else:
+                    result[q] = -1
             result["reasoning"] = data.get("reasoning", {q: "" for q in questions})
             return result
         except (json.JSONDecodeError, TypeError, ValueError):
