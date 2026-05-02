@@ -5,7 +5,7 @@ import pytest
 from click.testing import CliRunner
 
 from ai_grader.cli import cli
-from ai_grader.gui import browser_url, create_app
+from ai_grader.gui import browser_url, create_app, resolve_listen_port
 from ai_grader.launcher import main as launcher_main
 from ai_grader.submission_loader import Submission
 
@@ -174,6 +174,7 @@ def test_gui_command_invokes_runner(monkeypatch: pytest.MonkeyPatch) -> None:
         called.update(kwargs)
 
     monkeypatch.setattr("ai_grader.gui.run", fake_run)
+    monkeypatch.setattr("ai_grader.gui.resolve_listen_port", lambda host, port: port)
 
     result = CliRunner().invoke(
         cli,
@@ -197,6 +198,23 @@ def test_browser_url_formats_bind_addresses() -> None:
     assert browser_url("127.0.0.1", 5000) == "http://127.0.0.1:5000"
     assert browser_url("0.0.0.0", 5000) == "http://127.0.0.1:5000"
     assert browser_url("::1", 5000) == "http://[::1]:5000"
+
+
+def test_resolve_listen_port_returns_requested_port_when_free() -> None:
+    port = resolve_listen_port("127.0.0.1", 51230, search_limit=3)
+    assert port == 51230
+
+
+def test_resolve_listen_port_uses_next_free_port() -> None:
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        sock.listen(1)
+        busy_port = sock.getsockname()[1]
+        port = resolve_listen_port("127.0.0.1", busy_port, search_limit=3)
+
+    assert port == busy_port + 1
 
 
 def test_api_jobs_rejects_missing_csrf_token(tmp_path: Path) -> None:

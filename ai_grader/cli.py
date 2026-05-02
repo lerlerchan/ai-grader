@@ -203,7 +203,7 @@ def gui(host, port, no_browser, unsafe_expose, questions, ollama_host, dpi):
         )
 
     try:
-        from .gui import browser_url, run as run_gui
+        from .gui import browser_url, resolve_listen_port, run as run_gui
     except ImportError as exc:
         click.echo(
             "ERROR: Flask is required to launch the web UI.\n"
@@ -212,10 +212,14 @@ def gui(host, port, no_browser, unsafe_expose, questions, ollama_host, dpi):
         )
         raise SystemExit(1) from exc
 
-    click.echo(f"Starting AI Grader UI at {browser_url(host, port)}")
+    resolved_port = resolve_listen_port(host, port)
+    if resolved_port != port:
+        click.echo(f"Port {port} is busy. Starting AI Grader UI at {browser_url(host, resolved_port)}")
+    else:
+        click.echo(f"Starting AI Grader UI at {browser_url(host, resolved_port)}")
     run_gui(
         host=host,
-        port=port,
+        port=resolved_port,
         open_browser=not no_browser,
         ollama_host=ollama_host,
         default_questions=question_list,

@@ -72,6 +72,10 @@ The app opens in your browser at `http://127.0.0.1:5000` and lets you:
 - choose a local Ollama model
 - grade the batch and download `marks.xlsx` / `marks.csv`
 
+Demo video: [Watch on YouTube](https://youtu.be/bCerx7UwXhk?si=NacG8KDLwdOvKP07)
+
+![AI Grader browser UI](image/ai-grader-gui.png)
+
 ---
 
 ## Usage
@@ -184,6 +188,8 @@ For the first Windows release, teachers still need Ollama installed separately:
 ---
 
 ## How it works
+
+![AI Grader solution architecture](image/aiGRader_solutionArchitecture.png)
 
 1. **Scheme** — loads your marking scheme from any supported format
 2. **Detect** — for each submission, detects automatically:

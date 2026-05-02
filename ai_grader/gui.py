@@ -343,6 +343,7 @@ def run(
         default_dpi=default_dpi,
     )
     atexit.register(_cleanup_all_jobs, app)
+    port = resolve_listen_port(host, port)
     url = browser_url(host, port)
     if open_browser:
         threading.Timer(1.0, lambda: webbrowser.open_new(url)).start()
@@ -624,6 +625,29 @@ def browser_url(host: str, port: int) -> str:
             display_host = host
 
     return f"http://{display_host}:{port}"
+
+
+def resolve_listen_port(host: str, port: int, *, search_limit: int = 10) -> int:
+    bind_host, family = _socket_binding(host)
+    for candidate in range(port, port + search_limit):
+        with socket.socket(family, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                sock.bind((bind_host, candidate))
+            except OSError:
+                continue
+            return candidate
+    raise OSError(f"No available port found for {host} starting at {port}")
+
+
+def _socket_binding(host: str) -> tuple[str, int]:
+    if host == "localhost":
+        return "127.0.0.1", socket.AF_INET
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return host, socket.AF_INET
+    return host, socket.AF_INET6 if address.version == 6 else socket.AF_INET
 
 
 def _app_temp_root() -> str:
