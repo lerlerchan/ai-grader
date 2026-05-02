@@ -9,14 +9,14 @@ import ipaddress
 import json
 import os
 import re
-import socket
-import urllib.error
-import urllib.request
 import secrets
 import shutil
+import socket
 import tempfile
 import threading
 import time
+import urllib.error
+import urllib.request
 import uuid
 import webbrowser
 from dataclasses import dataclass, field
@@ -87,6 +87,16 @@ def create_app(
         if request.headers.get("X-CSRF-Token") != session.get("csrf_token"):
             abort(403)
 
+    @app.after_request
+    def disable_browser_caching(response: Response) -> Response:
+        if request.method == "GET" and (
+            request.path == "/" or request.path.startswith("/api/")
+        ):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
     @app.get("/")
     def index() -> str:
         session["csrf_token"] = session.get("csrf_token") or secrets.token_urlsafe(32)
@@ -141,7 +151,17 @@ def create_app(
             warnings.append(f"Cloud model list unavailable: {exc}")
 
         models = _combine_model_sources(local_names, cloud_names)
-        return jsonify({"ok": True, "models": models, "message": "", "warnings": warnings})
+        return jsonify(
+            {
+                "ok": True,
+                "models": models,
+                "message": "",
+                "warnings": warnings,
+                "ollama_host": app.config["DEFAULT_OLLAMA_HOST"],
+                "local_model_count": len(local_names),
+                "cloud_model_count": len(cloud_names),
+            }
+        )
 
     @app.post("/api/detect-questions")
     def detect_questions() -> Response:
@@ -325,7 +345,7 @@ def run(
     atexit.register(_cleanup_all_jobs, app)
     url = browser_url(host, port)
     if open_browser:
-        threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+        threading.Timer(1.0, lambda: webbrowser.open_new(url)).start()
     app.run(host=host, port=port, use_reloader=False)
 
 

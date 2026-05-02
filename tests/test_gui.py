@@ -21,6 +21,7 @@ def test_index_renders_default_configuration() -> None:
     assert "AI Grader Studio" in page
     assert "Q1,Q2" in page
     assert "180" in page
+    assert response.headers["Cache-Control"] == "no-store, no-cache, must-revalidate, max-age=0"
 
 
 def test_api_models_returns_sorted_model_names(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -49,6 +50,9 @@ def test_api_models_returns_sorted_model_names(monkeypatch: pytest.MonkeyPatch) 
         ],
         "message": "",
         "warnings": [],
+        "ollama_host": "http://localhost:11434",
+        "local_model_count": 2,
+        "cloud_model_count": 1,
     }
 
 

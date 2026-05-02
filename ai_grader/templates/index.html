@@ -774,6 +774,7 @@
     async function loadModels() {
       const key = elements.apiKey.value.trim();
       const url = key ? `/api/models?api_key=${encodeURIComponent(key)}` : "/api/models";
+      const previousValue = elements.model.value;
       try {
         const response = await fetch(url);
         const payload = await response.json();
@@ -791,10 +792,16 @@
         const localModels = entries.filter((entry) => entry.source === "local");
         const cloudModels = entries.filter((entry) => entry.source === "cloud");
         const warningSuffix = payload.warnings && payload.warnings.length ? " (cloud list unavailable)" : "";
+        const hostLabel = payload.ollama_host || document.getElementById("default-host").textContent;
 
-        setOllamaStatus(true, entries.length
-          ? `Ready — ${entries.length} model(s) found${warningSuffix}`
-          : `Connected, but no model is installed${warningSuffix}`);
+        if (localModels.length) {
+          const cloudText = cloudModels.length ? ` + ${cloudModels.length} cloud` : "";
+          setOllamaStatus(true, `Local Ollama ready on ${hostLabel} — ${localModels.length} local model(s)${cloudText}${warningSuffix}`);
+        } else if (entries.length) {
+          setOllamaStatus(true, `Connected to ${hostLabel} — no local models installed on this PC, ${cloudModels.length} cloud model(s) available${warningSuffix}`);
+        } else {
+          setOllamaStatus(true, `Connected to ${hostLabel}, but no models are available${warningSuffix}`);
+        }
 
         if (!entries.length) {
           elements.model.innerHTML = '<option value="">No model installed</option>';
@@ -816,6 +823,15 @@
 
         appendGroup("Local models", localModels);
         appendGroup("Cloud models (available to pull)", cloudModels);
+
+        const availableNames = entries.map((entry) => entry.name);
+        if (previousValue && availableNames.includes(previousValue)) {
+          elements.model.value = previousValue;
+        } else if (localModels.length) {
+          elements.model.value = localModels[0].name;
+        } else {
+          elements.model.value = entries[0].name;
+        }
       } catch (_) {
         elements.model.innerHTML = '<option value="">Cannot load models</option>';
         setOllamaStatus(false, "Cannot reach Ollama. Start it before grading.");
