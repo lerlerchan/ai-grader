@@ -9,6 +9,9 @@ import ipaddress
 import json
 import os
 import re
+import socket
+import urllib.error
+import urllib.request
 import secrets
 import shutil
 import tempfile
@@ -115,8 +118,9 @@ def create_app(
     @app.get("/api/models")
     def api_models() -> Response:
         api_key = (request.args.get("api_key") or "").strip() or None
+        warnings: list[str] = []
         try:
-            names = _list_model_names(app, api_key=api_key)
+            local_names = _list_local_model_names(app, api_key=api_key)
         except Exception as exc:
             return jsonify(
                 {
@@ -130,7 +134,14 @@ def create_app(
                 }
             )
 
-        return jsonify({"ok": True, "models": names, "message": ""})
+        try:
+            cloud_names = _list_cloud_model_names(api_key=api_key)
+        except (urllib.error.URLError, socket.timeout, json.JSONDecodeError, ValueError) as exc:
+            cloud_names = []
+            warnings.append(f"Cloud model list unavailable: {exc}")
+
+        models = _combine_model_sources(local_names, cloud_names)
+        return jsonify({"ok": True, "models": models, "message": "", "warnings": warnings})
 
     @app.post("/api/detect-questions")
     def detect_questions() -> Response:
@@ -333,7 +344,7 @@ def _run_job(
         job = app.extensions["jobs"][job_id]
 
     try:
-        available_models = _list_model_names(app, api_key=api_key)
+        available_models = _list_local_model_names(app, api_key=api_key)
         if model not in available_models:
             _emit(job, {"type": "pulling", "message": f"Model '{model}' not found locally. Downloading from Ollama — this may take a few minutes…"})
             try:
@@ -468,7 +479,7 @@ def _extract_question_labels(raw: str) -> list[str]:
     return labels
 
 
-def _list_model_names(app: Flask, api_key: str | None = None) -> list[str]:
+def _list_local_model_names(app: Flask, api_key: str | None = None) -> list[str]:
     client = _make_ollama_client(app, api_key)
     response = client.list()
 
@@ -477,7 +488,7 @@ def _list_model_names(app: Flask, api_key: str | None = None) -> list[str]:
     else:
         models = getattr(response, "models", [])
 
-    names = []
+    names: list[str] = []
     for model in models:
         if isinstance(model, dict):
             name = model.get("model") or model.get("name")
@@ -486,6 +497,32 @@ def _list_model_names(app: Flask, api_key: str | None = None) -> list[str]:
         if name:
             names.append(name)
     return sorted(names)
+
+
+def _list_cloud_model_names(api_key: str | None = None, limit: int = 200) -> list[str]:
+    url = f"https://ollama.com/api/tags?limit={limit}"
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+    request_obj = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(request_obj, timeout=10) as response:
+        payload = json.load(response)
+    models = payload.get("models", [])
+    names: list[str] = []
+    for model in models:
+        if isinstance(model, dict):
+            name = model.get("model") or model.get("name")
+        else:
+            name = None
+        if name:
+            names.append(name)
+    return sorted(set(names))
+
+
+def _combine_model_sources(local_names: list[str], cloud_names: list[str]) -> list[dict[str, str]]:
+    local_sorted = sorted({name for name in local_names if name})
+    cloud_sorted = sorted({name for name in cloud_names if name and name not in local_sorted})
+    models = [{"name": name, "source": "local"} for name in local_sorted]
+    models.extend({"name": name, "source": "cloud"} for name in cloud_sorted)
+    return models
 
 
 def _error_result(submission: Submission, questions: list[str], error_message: str) -> dict[str, Any]:

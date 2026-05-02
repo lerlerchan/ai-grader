@@ -785,21 +785,37 @@
           return;
         }
 
-        setOllamaStatus(true, payload.models.length
-          ? `Ready — ${payload.models.length} model(s) found`
-          : "Connected, but no model is installed");
+        const entries = (payload.models || [])
+          .map((entry) => typeof entry === "string" ? { name: entry, source: "local" } : entry)
+          .filter((entry) => entry && entry.name);
+        const localModels = entries.filter((entry) => entry.source === "local");
+        const cloudModels = entries.filter((entry) => entry.source === "cloud");
+        const warningSuffix = payload.warnings && payload.warnings.length ? " (cloud list unavailable)" : "";
 
-        if (!payload.models.length) {
+        setOllamaStatus(true, entries.length
+          ? `Ready — ${entries.length} model(s) found${warningSuffix}`
+          : `Connected, but no model is installed${warningSuffix}`);
+
+        if (!entries.length) {
           elements.model.innerHTML = '<option value="">No model installed</option>';
           return;
         }
 
-        for (const model of payload.models) {
-          const option = document.createElement("option");
-          option.value = model;
-          option.textContent = model;
-          elements.model.append(option);
-        }
+        const appendGroup = (label, models) => {
+          if (!models.length) return;
+          const group = document.createElement("optgroup");
+          group.label = label;
+          for (const model of models) {
+            const option = document.createElement("option");
+            option.value = model.name;
+            option.textContent = model.name;
+            group.append(option);
+          }
+          elements.model.append(group);
+        };
+
+        appendGroup("Local models", localModels);
+        appendGroup("Cloud models (available to pull)", cloudModels);
       } catch (_) {
         elements.model.innerHTML = '<option value="">Cannot load models</option>';
         setOllamaStatus(false, "Cannot reach Ollama. Start it before grading.");

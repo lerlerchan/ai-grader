@@ -23,17 +23,18 @@ def test_index_renders_default_configuration() -> None:
     assert "180" in page
 
 
-def test_api_models_returns_sorted_model_names() -> None:
+def test_api_models_returns_sorted_model_names(monkeypatch: pytest.MonkeyPatch) -> None:
     app = create_app()
 
     class FakeClient:
-        def __init__(self, host: str) -> None:
+        def __init__(self, host: str, headers: dict | None = None) -> None:
             self.host = host
 
         def list(self) -> dict:
             return {"models": [{"model": "zeta"}, {"model": "alpha"}]}
 
     app.config["OLLAMA_CLIENT_FACTORY"] = FakeClient
+    monkeypatch.setattr("ai_grader.gui._list_cloud_model_names", lambda **_: ["beta"])
     client = app.test_client()
 
     response = client.get("/api/models")
@@ -41,8 +42,13 @@ def test_api_models_returns_sorted_model_names() -> None:
     assert response.status_code == 200
     assert response.get_json() == {
         "ok": True,
-        "models": ["alpha", "zeta"],
+        "models": [
+            {"name": "alpha", "source": "local"},
+            {"name": "zeta", "source": "local"},
+            {"name": "beta", "source": "cloud"},
+        ],
         "message": "",
+        "warnings": [],
     }
 
 
@@ -72,7 +78,7 @@ def test_job_stream_and_download_work_with_fake_dependencies(
             return None
 
     class FakeClient:
-        def __init__(self, host: str) -> None:
+        def __init__(self, host: str, headers: dict | None = None) -> None:
             self.host = host
 
         def list(self) -> dict:
