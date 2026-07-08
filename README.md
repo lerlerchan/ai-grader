@@ -9,7 +9,7 @@
 
 ![Code Without Barrier Hackathon 2026 ASEAN Appreciation Prize](https://github.com/user-attachments/assets/413c75ce-ca3c-432d-819e-7fa538abdfe7)
 
-This repository won the Code Without Barrier Hackathon 2026 ASEAN – Track Build Your Agentic Personal Assistant, Appreciation Prize.
+This repository won the [Code Without Barrier Hackathon 2026 ASEAN – Track Build Your Agentic Personal Assistant, Appreciation Prize](https://www.linkedin.com/posts/dr-julia-gusakova-746b7124_last-week-on-10-june-2026-we-officially-activity-7472234982300889088-09O4?utm_source=share&utm_medium=member_desktop&rcm=ACoAACXj_RsBHiKHngWXSc1txcqJO7OI8u9qk4g).
 
 ---
 
