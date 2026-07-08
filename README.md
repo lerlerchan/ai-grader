@@ -5,6 +5,12 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
+## Recognition
+
+![Code Without Barrier Hackathon 2026 ASEAN Appreciation Prize](https://github.com/user-attachments/assets/413c75ce-ca3c-432d-819e-7fa538abdfe7)
+
+This repository won the Code Without Barrier Hackathon 2026 ASEAN – Track Build Your Agentic Personal Assistant, Appreciation Prize.
+
 ---
 
 ## Why ai-grader?
