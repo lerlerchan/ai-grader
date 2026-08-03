@@ -108,23 +108,6 @@ def create_app(
             csrf_token=session["csrf_token"],
         )
 
-    @app.get("/api/browse-folder")
-    def api_browse_folder() -> Response:
-        try:
-            import tkinter as tk
-            from tkinter import filedialog
-
-            root = tk.Tk()
-            root.withdraw()
-            root.wm_attributes("-topmost", True)
-            path = filedialog.askdirectory(parent=root, title="Select submissions folder")
-            root.destroy()
-            if path:
-                return jsonify({"ok": True, "path": path})
-            return jsonify({"ok": False, "path": ""})
-        except Exception as exc:
-            return jsonify({"ok": False, "path": "", "message": str(exc)})
-
     @app.get("/api/models")
     def api_models() -> Response:
         api_key = (request.args.get("api_key") or "").strip() or None
@@ -212,7 +195,7 @@ def create_app(
     @app.post("/api/jobs")
     def create_job() -> Response:
         scheme_file = request.files.get("scheme")
-        submissions_path = (request.form.get("submissions_path") or "").strip()
+        submission_files = request.files.getlist("submissions")
         model = (request.form.get("model") or "").strip()
         questions = _normalize_questions(
             request.form.get("questions") or ",".join(app.config["DEFAULT_QUESTIONS"])
@@ -221,15 +204,9 @@ def create_app(
 
         if not scheme_file or not scheme_file.filename:
             return jsonify({"ok": False, "message": "Please choose a marking scheme file."}), 400
-        if not submissions_path:
-            return jsonify({"ok": False, "message": "Please enter the submissions folder path."}), 400
-        if not os.path.isdir(submissions_path):
-            return jsonify(
-                {
-                    "ok": False,
-                    "message": f"Submissions folder not found: {submissions_path}",
-                }
-            ), 400
+        submission_files = [f for f in submission_files if f and f.filename]
+        if not submission_files:
+            return jsonify({"ok": False, "message": "Please choose one or more submission files."}), 400
         if not model:
             return jsonify({"ok": False, "message": "Please choose an Ollama model."}), 400
         if not questions:
@@ -257,9 +234,17 @@ def create_app(
         scheme_path = uploads_dir / filename
         scheme_file.save(scheme_path)
 
+        submissions_dir = uploads_dir / "submissions"
+        submissions_dir.mkdir(parents=True, exist_ok=True)
+        for submission_file in submission_files:
+            saved_name = secure_filename(submission_file.filename)
+            if not saved_name:
+                continue
+            submission_file.save(submissions_dir / saved_name)
+
         thread = app.config["THREAD_FACTORY"](
             target=_run_job,
-            args=(app, job_id, str(scheme_path), submissions_path, model, questions, dpi, str(output_dir), api_key),
+            args=(app, job_id, str(scheme_path), str(submissions_dir), model, questions, dpi, str(output_dir), api_key),
             daemon=True,
         )
         thread.start()

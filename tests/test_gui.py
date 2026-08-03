@@ -122,8 +122,6 @@ def test_job_stream_and_download_work_with_fake_dependencies(
         TIMER_FACTORY=NoopTimer,
     )
 
-    submissions_dir = tmp_path / "submissions"
-    submissions_dir.mkdir()
     client = app.test_client()
     client.get("/")
 
@@ -131,7 +129,7 @@ def test_job_stream_and_download_work_with_fake_dependencies(
         "/api/jobs",
         data={
             "scheme": (io.BytesIO(b"# Scheme"), "scheme.md"),
-            "submissions_path": str(submissions_dir),
+            "submissions": (io.BytesIO(b"%PDF-1.4\n"), "Alice_MATH2083_2026A_quiz_D240051A.pdf"),
             "model": "fake-model",
             "questions": "Q1",
             "dpi": "150",
@@ -217,19 +215,16 @@ def test_resolve_listen_port_uses_next_free_port() -> None:
     assert port == busy_port + 1
 
 
-def test_api_jobs_rejects_missing_csrf_token(tmp_path: Path) -> None:
+def test_api_jobs_rejects_missing_csrf_token() -> None:
     app = create_app(default_questions=["Q1"])
     client = app.test_client()
     client.get("/")
-
-    submissions_dir = tmp_path / "submissions"
-    submissions_dir.mkdir()
 
     response = client.post(
         "/api/jobs",
         data={
             "scheme": (io.BytesIO(b"# Scheme"), "scheme.md"),
-            "submissions_path": str(submissions_dir),
+            "submissions": (io.BytesIO(b"%PDF-1.4\n"), "x.pdf"),
             "model": "fake-model",
             "questions": "Q1",
             "dpi": "150",
@@ -238,6 +233,28 @@ def test_api_jobs_rejects_missing_csrf_token(tmp_path: Path) -> None:
     )
 
     assert response.status_code == 403
+
+
+def test_api_jobs_rejects_missing_submissions() -> None:
+    app = create_app(default_questions=["Q1"])
+    client = app.test_client()
+    client.get("/")
+
+    response = client.post(
+        "/api/jobs",
+        data={
+            "scheme": (io.BytesIO(b"# Scheme"), "scheme.md"),
+            "model": "fake-model",
+            "questions": "Q1",
+            "dpi": "150",
+        },
+        headers={"X-CSRF-Token": _csrf_token(client)},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 400
+    payload = response.get_json()
+    assert payload["ok"] is False
 
 
 def test_stream_resumes_from_last_event_id_query() -> None:
