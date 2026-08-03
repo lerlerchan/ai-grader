@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import fitz
-import pytest
 
 from ai_grader.annotator import annotate
 

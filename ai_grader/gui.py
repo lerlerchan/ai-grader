@@ -238,7 +238,8 @@ def create_app(
         submissions_dir = uploads_dir / "submissions"
         submissions_dir.mkdir(parents=True, exist_ok=True)
         for submission_file in submission_files:
-            saved_name = secure_filename(submission_file.filename)
+            raw_name = os.path.basename((submission_file.filename or "").replace("\\", "/"))
+            saved_name = re.sub(r"[^\w\-. ]+", "_", raw_name, flags=re.UNICODE).strip("._ ")
             if not saved_name:
                 continue
             submission_file.save(submissions_dir / saved_name)
