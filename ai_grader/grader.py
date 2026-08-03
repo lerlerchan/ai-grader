@@ -11,6 +11,12 @@ import ollama
 
 from .submission_loader import Submission
 
+_VALID_REGIONS = (
+    "top-left", "top-right",
+    "mid-left", "mid-right",
+    "bottom-left", "bottom-right",
+)
+
 _SYSTEM_PROMPT = """\
 You are an experienced teacher marking a student quiz.
 
@@ -26,6 +32,12 @@ where the student shows partial knowledge or correct method with minor errors.
 words, or garbled characters do NOT count against the student — focus on \
 mathematical/conceptual correctness and intent.
 - All mark values must be non-negative integers within the range shown for each question.
+- For each question, also report roughly where the student's answer to that \
+question appears: which page number (1-indexed, matching the order pages were \
+given to you) and a coarse region on that page, one of: top-left, top-right, \
+mid-left, mid-right, bottom-left, bottom-right. This is a rough pointer for a \
+teacher to find the answer quickly — it does not need to be pixel-precise. If \
+you cannot tell, omit the location for that question rather than guessing.
 - Return ONLY a valid JSON object — no explanation outside the JSON.
 
 Required JSON format (use exactly these question keys):
@@ -35,6 +47,9 @@ Required JSON format (use exactly these question keys):
   }},
   "reasoning": {{
 {reasoning_format}
+  }},
+  "location": {{
+{location_format}
   }}
 }}
 
@@ -62,14 +77,19 @@ def grade(
 ) -> dict:
     """
     Grade a single submission. Returns a dict:
-      {"Q1": int, "Q2": int, ..., "reasoning": {"Q1": str, ...}}
-    Mark values default to -1 on parse failure.
+      {"Q1": int, "Q2": int, ..., "reasoning": {"Q1": str, ...}, "location": {"Q1": {"page": int, "region": str}, ...}}
+    Mark values default to -1 on parse failure. "location" only contains entries
+    the model reported validly; questions with no/invalid location are absent.
     """
     if questions is None:
         questions = ["Q1", "Q2", "Q3", "Q4"]
 
     question_format = "\n".join(f'    "{q}": <integer>,' for q in questions)
     reasoning_format = "\n".join(f'    "{q}": "<brief justification>",' for q in questions)
+    location_format = "\n".join(
+        f'    "{q}": {{"page": <integer>, "region": "<top-left|top-right|mid-left|mid-right|bottom-left|bottom-right>"}},'
+        for q in questions
+    )
 
     headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
     client = ollama.Client(host=ollama_host, headers=headers)
@@ -77,6 +97,7 @@ def grade(
         scheme=scheme_text,
         question_format=question_format,
         reasoning_format=reasoning_format,
+        location_format=location_format,
     )
 
     if submission.mode == "vision":
@@ -107,6 +128,18 @@ def _parse_response(raw: str, questions: list[str]) -> dict:
     """Extract JSON from model response, with fallback for extra prose."""
     blank = {q: -1 for q in questions}
     blank["reasoning"] = {q: "" for q in questions}
+    blank["location"] = {}
+
+    def _valid_location(entry: object) -> dict[str, int | str] | None:
+        if not isinstance(entry, dict):
+            return None
+        page = entry.get("page")
+        region = entry.get("region")
+        if not isinstance(page, int) or page < 1:
+            return None
+        if region not in _VALID_REGIONS:
+            return None
+        return {"page": page, "region": region}
 
     def _try(text: str) -> dict | None:
         try:
@@ -120,6 +153,15 @@ def _parse_response(raw: str, questions: list[str]) -> dict:
                 else:
                     result[q] = -1
             result["reasoning"] = data.get("reasoning", {q: "" for q in questions})
+
+            raw_locations = data.get("location", {})
+            locations = {}
+            if isinstance(raw_locations, dict):
+                for q in questions:
+                    valid = _valid_location(raw_locations.get(q))
+                    if valid is not None:
+                        locations[q] = valid
+            result["location"] = locations
             return result
         except (json.JSONDecodeError, TypeError, ValueError):
             return None
