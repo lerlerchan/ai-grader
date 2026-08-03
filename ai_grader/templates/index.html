@@ -972,6 +972,26 @@
             link.textContent = `Download ${file.name}`;
             elements.downloads.append(link);
           }
+          const clearButton = document.createElement("button");
+          clearButton.type = "button";
+          clearButton.className = "ghost-button";
+          clearButton.textContent = "Clear submissions from server now";
+          clearButton.addEventListener("click", async () => {
+            if (!confirm("Have you downloaded everything you need? This clears the uploaded files from the server now.")) return;
+            clearButton.disabled = true;
+            clearButton.textContent = "Clearing…";
+            try {
+              await fetch(`/api/jobs/${jobId}/clear`, {
+                method: "POST",
+                headers: { "X-CSRF-Token": csrfToken },
+              });
+              clearButton.textContent = "Cleared.";
+            } catch (error) {
+              clearButton.textContent = "Clear failed — try again.";
+              clearButton.disabled = false;
+            }
+          });
+          elements.downloads.append(clearButton);
           activeStream.close();
           activeStream = null;
           elements.submit.disabled = false;

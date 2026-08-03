@@ -401,6 +401,33 @@ def _completed_job():
     return job
 
 
+def test_clear_job_endpoint_removes_job_immediately(tmp_path: Path) -> None:
+    app = create_app(default_questions=["Q1"])
+    client = app.test_client()
+    client.get("/")
+
+    from ai_grader.gui import JobState
+
+    job_id = "test-job-clear"
+    job_root = tmp_path / "job-root"
+    job_root.mkdir()
+    (job_root / "marker.txt").write_text("x", encoding="utf-8")
+    job = JobState(job_root=str(job_root))
+    with app.extensions["jobs_lock"]:
+        app.extensions["jobs"][job_id] = job
+
+    response = client.post(
+        f"/api/jobs/{job_id}/clear",
+        headers={"X-CSRF-Token": _csrf_token(client)},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["ok"] is True
+    assert not job_root.exists()
+    with app.extensions["jobs_lock"]:
+        assert job_id not in app.extensions["jobs"]
+
+
 def _csrf_token(client) -> str:
     with client.session_transaction() as session:
         return session["csrf_token"]

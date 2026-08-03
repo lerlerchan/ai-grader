@@ -311,6 +311,14 @@ def create_app(
         _schedule_cleanup(app, job_id, _POST_DOWNLOAD_RETENTION_SECONDS)
         return response
 
+    @app.post("/api/jobs/<job_id>/clear")
+    def clear_job(job_id: str) -> Response:
+        with app.extensions["jobs_lock"]:
+            job_exists = job_id in app.extensions["jobs"]
+        if job_exists:
+            _cleanup_job(app, job_id)
+        return jsonify({"ok": True})
+
     return app
 
 
