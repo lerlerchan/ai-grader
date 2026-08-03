@@ -152,6 +152,101 @@ def test_job_stream_and_download_work_with_fake_dependencies(
     assert "D240051A" in download.get_data(as_text=True)
 
 
+def test_job_produces_annotated_zip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    app = create_app(default_questions=["Q1"])
+
+    class ImmediateThread:
+        def __init__(self, target, args=(), daemon=None):
+            self.target = target
+            self.args = args
+
+        def start(self) -> None:
+            self.target(*self.args)
+
+    class NoopTimer:
+        def __init__(self, interval, function, args=()):
+            self.function = function
+            self.args = args
+            self.daemon = False
+
+        def start(self) -> None:
+            return None
+
+        def cancel(self) -> None:
+            return None
+
+    class FakeClient:
+        def __init__(self, host: str, headers: dict | None = None) -> None:
+            self.host = host
+
+        def list(self) -> dict:
+            return {"models": [{"model": "fake-model"}]}
+
+    def fake_load_scheme(path: str) -> str:
+        return "scheme"
+
+    def fake_discover(folder: str) -> list[Submission]:
+        submission_path = tmp_path / "alice.pdf"
+        submission_path.write_bytes(b"%PDF-1.4\n")
+        return [Submission(student_id="D240051A", name="Alice", path=str(submission_path))]
+
+    def fake_load(submission: Submission, dpi: int = 150) -> Submission:
+        submission.mode = "text"
+        submission.text = "Q1: APPLE"
+        return submission
+
+    def fake_grade(*args, **kwargs) -> dict:
+        return {"Q1": 1, "reasoning": {"Q1": "ok"}, "location": {}}
+
+    def fake_write_results(results, output_dir, questions, formats) -> list[str]:
+        output = Path(output_dir)
+        output.mkdir(parents=True, exist_ok=True)
+        xlsx_path = output / "marks.xlsx"
+        xlsx_path.write_text("placeholder", encoding="utf-8")
+        return [str(xlsx_path)]
+
+    def fake_annotate(submission_path, name, student_id, questions, marks, output_path) -> None:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_path).write_bytes(b"%PDF-1.4\n")
+
+    monkeypatch.setattr("ai_grader.gui.annotate", fake_annotate)
+
+    app.config.update(
+        OLLAMA_CLIENT_FACTORY=FakeClient,
+        LOAD_SCHEME=fake_load_scheme,
+        DISCOVER=fake_discover,
+        LOAD_SUBMISSION=fake_load,
+        GRADE=fake_grade,
+        WRITE_RESULTS=fake_write_results,
+        THREAD_FACTORY=ImmediateThread,
+        TIMER_FACTORY=NoopTimer,
+    )
+
+    client = app.test_client()
+    client.get("/")
+
+    response = client.post(
+        "/api/jobs",
+        data={
+            "scheme": (io.BytesIO(b"# Scheme"), "scheme.md"),
+            "submissions": (io.BytesIO(b"%PDF-1.4\n"), "Alice.pdf"),
+            "model": "fake-model",
+            "questions": "Q1",
+            "dpi": "150",
+        },
+        headers={"X-CSRF-Token": _csrf_token(client)},
+        content_type="multipart/form-data",
+    )
+    payload = response.get_json()
+
+    stream = client.get(f"/api/jobs/{payload['job_id']}/stream")
+    stream_text = stream.get_data(as_text=True)
+    assert '"name": "annotated.zip"' in stream_text
+
+    download = client.get(f"/download/{payload['job_id']}/annotated.zip")
+    assert download.status_code == 200
+
+
 def test_launcher_main_calls_run(monkeypatch: pytest.MonkeyPatch) -> None:
     called = {"run": False}
 

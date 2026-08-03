@@ -27,6 +27,7 @@ import ollama
 from flask import Flask, Response, abort, jsonify, render_template, request, send_file, session, stream_with_context
 from werkzeug.utils import secure_filename
 
+from .annotator import annotate
 from .exporter import write_results
 from .grader import grade
 from .scheme_parser import load_scheme
@@ -402,6 +403,13 @@ def _run_job(
                 }
                 for question in questions:
                     result[question] = marks.get(question, -1)
+
+                annotated_name = _safe_filename(f"{submission.name}_{submission.student_id}") + ".pdf"
+                annotated_path = Path(output_dir) / "annotated" / annotated_name
+                try:
+                    annotate(submission.path, submission.name, submission.student_id, questions, marks, str(annotated_path))
+                except Exception:
+                    pass  # annotation is best-effort; grading result is unaffected
             except Exception as exc:
                 result = _error_result(submission, questions, str(exc))
 
@@ -430,6 +438,13 @@ def _run_job(
             app.config["OUTPUT_FORMATS"],
         )
         job.files = {Path(path).name: path for path in written}
+
+        annotated_dir = Path(output_dir) / "annotated"
+        if annotated_dir.is_dir() and any(annotated_dir.iterdir()):
+            zip_base = str(Path(output_dir) / "annotated")
+            zip_path = shutil.make_archive(zip_base, "zip", root_dir=str(annotated_dir))
+            job.files[Path(zip_path).name] = zip_path
+
         _emit(
             job,
             {
@@ -537,6 +552,10 @@ def _error_result(submission: Submission, questions: list[str], error_message: s
         result[question] = -1
         result["reasoning"][question] = error_message if question == questions[0] else ""
     return result
+
+
+def _safe_filename(name: str) -> str:
+    return re.sub(r"[^\w\-]+", "_", name).strip("_")
 
 
 def _schedule_cleanup(app: Flask, job_id: str, delay_seconds: int) -> None:
