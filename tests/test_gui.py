@@ -122,8 +122,6 @@ def test_job_stream_and_download_work_with_fake_dependencies(
         TIMER_FACTORY=NoopTimer,
     )
 
-    submissions_dir = tmp_path / "submissions"
-    submissions_dir.mkdir()
     client = app.test_client()
     client.get("/")
 
@@ -131,7 +129,7 @@ def test_job_stream_and_download_work_with_fake_dependencies(
         "/api/jobs",
         data={
             "scheme": (io.BytesIO(b"# Scheme"), "scheme.md"),
-            "submissions_path": str(submissions_dir),
+            "submissions": (io.BytesIO(b"%PDF-1.4\n"), "Alice_MATH2083_2026A_quiz_D240051A.pdf"),
             "model": "fake-model",
             "questions": "Q1",
             "dpi": "150",
@@ -152,6 +150,194 @@ def test_job_stream_and_download_work_with_fake_dependencies(
     download = client.get(f"/download/{payload['job_id']}/marks.csv")
     assert download.status_code == 200
     assert "D240051A" in download.get_data(as_text=True)
+
+
+def test_upload_preserves_non_ascii_student_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    app = create_app(default_questions=["Q1"])
+
+    class ImmediateThread:
+        def __init__(self, target, args=(), daemon=None):
+            self.target = target
+            self.args = args
+
+        def start(self) -> None:
+            self.target(*self.args)
+
+    class NoopTimer:
+        def __init__(self, interval, function, args=()):
+            self.function = function
+            self.args = args
+            self.daemon = False
+
+        def start(self) -> None:
+            return None
+
+        def cancel(self) -> None:
+            return None
+
+    class FakeClient:
+        def __init__(self, host: str, headers: dict | None = None) -> None:
+            self.host = host
+
+        def list(self) -> dict:
+            return {"models": [{"model": "fake-model"}]}
+
+    def fake_load_scheme(path: str) -> str:
+        return "scheme"
+
+    seen_submissions: list[Submission] = []
+
+    def capturing_load(submission: Submission, dpi: int = 150) -> Submission:
+        seen_submissions.append(submission)
+        submission.mode = "text"
+        submission.text = "Q1: APPLE"
+        return submission
+
+    def fake_grade(*args, **kwargs) -> dict:
+        return {"Q1": 1, "reasoning": {"Q1": "ok"}}
+
+    def fake_write_results(results, output_dir, questions, formats) -> list[str]:
+        output = Path(output_dir)
+        output.mkdir(parents=True, exist_ok=True)
+        csv_path = output / "marks.csv"
+        csv_path.write_text("student_id,name,Q1,total\n", encoding="utf-8")
+        return [str(csv_path)]
+
+    app.config.update(
+        OLLAMA_CLIENT_FACTORY=FakeClient,
+        LOAD_SCHEME=fake_load_scheme,
+        LOAD_SUBMISSION=capturing_load,
+        GRADE=fake_grade,
+        WRITE_RESULTS=fake_write_results,
+        THREAD_FACTORY=ImmediateThread,
+        TIMER_FACTORY=NoopTimer,
+    )
+
+    client = app.test_client()
+    client.get("/")
+
+    response = client.post(
+        "/api/jobs",
+        data={
+            "scheme": (io.BytesIO(b"# Scheme"), "scheme.md"),
+            "submissions": (
+                io.BytesIO(b"%PDF-1.4\n"),
+                "李明_MATH2083_2026A_quiz_D240051A.pdf",
+            ),
+            "model": "fake-model",
+            "questions": "Q1",
+            "dpi": "150",
+        },
+        headers={"X-CSRF-Token": _csrf_token(client)},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["ok"] is True
+
+    stream = client.get(f"/api/jobs/{payload['job_id']}/stream")
+    stream_text = stream.get_data(as_text=True)
+    assert '"type": "done"' in stream_text
+
+    assert len(seen_submissions) == 1
+    assert seen_submissions[0].student_id == "D240051A"
+    assert seen_submissions[0].name == "李明"
+
+
+def test_job_produces_annotated_zip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    app = create_app(default_questions=["Q1"])
+
+    class ImmediateThread:
+        def __init__(self, target, args=(), daemon=None):
+            self.target = target
+            self.args = args
+
+        def start(self) -> None:
+            self.target(*self.args)
+
+    class NoopTimer:
+        def __init__(self, interval, function, args=()):
+            self.function = function
+            self.args = args
+            self.daemon = False
+
+        def start(self) -> None:
+            return None
+
+        def cancel(self) -> None:
+            return None
+
+    class FakeClient:
+        def __init__(self, host: str, headers: dict | None = None) -> None:
+            self.host = host
+
+        def list(self) -> dict:
+            return {"models": [{"model": "fake-model"}]}
+
+    def fake_load_scheme(path: str) -> str:
+        return "scheme"
+
+    def fake_discover(folder: str) -> list[Submission]:
+        submission_path = tmp_path / "alice.pdf"
+        submission_path.write_bytes(b"%PDF-1.4\n")
+        return [Submission(student_id="D240051A", name="Alice", path=str(submission_path))]
+
+    def fake_load(submission: Submission, dpi: int = 150) -> Submission:
+        submission.mode = "text"
+        submission.text = "Q1: APPLE"
+        return submission
+
+    def fake_grade(*args, **kwargs) -> dict:
+        return {"Q1": 1, "reasoning": {"Q1": "ok"}, "location": {}}
+
+    def fake_write_results(results, output_dir, questions, formats) -> list[str]:
+        output = Path(output_dir)
+        output.mkdir(parents=True, exist_ok=True)
+        xlsx_path = output / "marks.xlsx"
+        xlsx_path.write_text("placeholder", encoding="utf-8")
+        return [str(xlsx_path)]
+
+    def fake_annotate(submission_path, name, student_id, questions, marks, output_path) -> None:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_path).write_bytes(b"%PDF-1.4\n")
+
+    monkeypatch.setattr("ai_grader.gui.annotate", fake_annotate)
+
+    app.config.update(
+        OLLAMA_CLIENT_FACTORY=FakeClient,
+        LOAD_SCHEME=fake_load_scheme,
+        DISCOVER=fake_discover,
+        LOAD_SUBMISSION=fake_load,
+        GRADE=fake_grade,
+        WRITE_RESULTS=fake_write_results,
+        THREAD_FACTORY=ImmediateThread,
+        TIMER_FACTORY=NoopTimer,
+    )
+
+    client = app.test_client()
+    client.get("/")
+
+    response = client.post(
+        "/api/jobs",
+        data={
+            "scheme": (io.BytesIO(b"# Scheme"), "scheme.md"),
+            "submissions": (io.BytesIO(b"%PDF-1.4\n"), "Alice.pdf"),
+            "model": "fake-model",
+            "questions": "Q1",
+            "dpi": "150",
+        },
+        headers={"X-CSRF-Token": _csrf_token(client)},
+        content_type="multipart/form-data",
+    )
+    payload = response.get_json()
+
+    stream = client.get(f"/api/jobs/{payload['job_id']}/stream")
+    stream_text = stream.get_data(as_text=True)
+    assert '"name": "annotated.zip"' in stream_text
+
+    download = client.get(f"/download/{payload['job_id']}/annotated.zip")
+    assert download.status_code == 200
 
 
 def test_launcher_main_calls_run(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -217,19 +403,16 @@ def test_resolve_listen_port_uses_next_free_port() -> None:
     assert port == busy_port + 1
 
 
-def test_api_jobs_rejects_missing_csrf_token(tmp_path: Path) -> None:
+def test_api_jobs_rejects_missing_csrf_token() -> None:
     app = create_app(default_questions=["Q1"])
     client = app.test_client()
     client.get("/")
-
-    submissions_dir = tmp_path / "submissions"
-    submissions_dir.mkdir()
 
     response = client.post(
         "/api/jobs",
         data={
             "scheme": (io.BytesIO(b"# Scheme"), "scheme.md"),
-            "submissions_path": str(submissions_dir),
+            "submissions": (io.BytesIO(b"%PDF-1.4\n"), "x.pdf"),
             "model": "fake-model",
             "questions": "Q1",
             "dpi": "150",
@@ -238,6 +421,28 @@ def test_api_jobs_rejects_missing_csrf_token(tmp_path: Path) -> None:
     )
 
     assert response.status_code == 403
+
+
+def test_api_jobs_rejects_missing_submissions() -> None:
+    app = create_app(default_questions=["Q1"])
+    client = app.test_client()
+    client.get("/")
+
+    response = client.post(
+        "/api/jobs",
+        data={
+            "scheme": (io.BytesIO(b"# Scheme"), "scheme.md"),
+            "model": "fake-model",
+            "questions": "Q1",
+            "dpi": "150",
+        },
+        headers={"X-CSRF-Token": _csrf_token(client)},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 400
+    payload = response.get_json()
+    assert payload["ok"] is False
 
 
 def test_stream_resumes_from_last_event_id_query() -> None:
@@ -287,6 +492,33 @@ def _completed_job():
     )
     _emit(job, {"type": "done", "graded": 1, "failed": 0, "files": []})
     return job
+
+
+def test_clear_job_endpoint_removes_job_immediately(tmp_path: Path) -> None:
+    app = create_app(default_questions=["Q1"])
+    client = app.test_client()
+    client.get("/")
+
+    from ai_grader.gui import JobState
+
+    job_id = "test-job-clear"
+    job_root = tmp_path / "job-root"
+    job_root.mkdir()
+    (job_root / "marker.txt").write_text("x", encoding="utf-8")
+    job = JobState(job_root=str(job_root))
+    with app.extensions["jobs_lock"]:
+        app.extensions["jobs"][job_id] = job
+
+    response = client.post(
+        f"/api/jobs/{job_id}/clear",
+        headers={"X-CSRF-Token": _csrf_token(client)},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["ok"] is True
+    assert not job_root.exists()
+    with app.extensions["jobs_lock"]:
+        assert job_id not in app.extensions["jobs"]
 
 
 def _csrf_token(client) -> str:

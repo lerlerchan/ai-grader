@@ -27,6 +27,7 @@ import ollama
 from flask import Flask, Response, abort, jsonify, render_template, request, send_file, session, stream_with_context
 from werkzeug.utils import secure_filename
 
+from .annotator import annotate
 from .exporter import write_results
 from .grader import grade
 from .scheme_parser import load_scheme
@@ -107,23 +108,6 @@ def create_app(
             default_ollama_host=app.config["DEFAULT_OLLAMA_HOST"],
             csrf_token=session["csrf_token"],
         )
-
-    @app.get("/api/browse-folder")
-    def api_browse_folder() -> Response:
-        try:
-            import tkinter as tk
-            from tkinter import filedialog
-
-            root = tk.Tk()
-            root.withdraw()
-            root.wm_attributes("-topmost", True)
-            path = filedialog.askdirectory(parent=root, title="Select submissions folder")
-            root.destroy()
-            if path:
-                return jsonify({"ok": True, "path": path})
-            return jsonify({"ok": False, "path": ""})
-        except Exception as exc:
-            return jsonify({"ok": False, "path": "", "message": str(exc)})
 
     @app.get("/api/models")
     def api_models() -> Response:
@@ -212,7 +196,7 @@ def create_app(
     @app.post("/api/jobs")
     def create_job() -> Response:
         scheme_file = request.files.get("scheme")
-        submissions_path = (request.form.get("submissions_path") or "").strip()
+        submission_files = request.files.getlist("submissions")
         model = (request.form.get("model") or "").strip()
         questions = _normalize_questions(
             request.form.get("questions") or ",".join(app.config["DEFAULT_QUESTIONS"])
@@ -221,15 +205,9 @@ def create_app(
 
         if not scheme_file or not scheme_file.filename:
             return jsonify({"ok": False, "message": "Please choose a marking scheme file."}), 400
-        if not submissions_path:
-            return jsonify({"ok": False, "message": "Please enter the submissions folder path."}), 400
-        if not os.path.isdir(submissions_path):
-            return jsonify(
-                {
-                    "ok": False,
-                    "message": f"Submissions folder not found: {submissions_path}",
-                }
-            ), 400
+        submission_files = [f for f in submission_files if f and f.filename]
+        if not submission_files:
+            return jsonify({"ok": False, "message": "Please choose one or more submission files."}), 400
         if not model:
             return jsonify({"ok": False, "message": "Please choose an Ollama model."}), 400
         if not questions:
@@ -257,9 +235,18 @@ def create_app(
         scheme_path = uploads_dir / filename
         scheme_file.save(scheme_path)
 
+        submissions_dir = uploads_dir / "submissions"
+        submissions_dir.mkdir(parents=True, exist_ok=True)
+        for submission_file in submission_files:
+            raw_name = os.path.basename((submission_file.filename or "").replace("\\", "/"))
+            saved_name = re.sub(r"[^\w\-. ]+", "_", raw_name, flags=re.UNICODE).strip("._ ")
+            if not saved_name:
+                continue
+            submission_file.save(submissions_dir / saved_name)
+
         thread = app.config["THREAD_FACTORY"](
             target=_run_job,
-            args=(app, job_id, str(scheme_path), submissions_path, model, questions, dpi, str(output_dir), api_key),
+            args=(app, job_id, str(scheme_path), str(submissions_dir), model, questions, dpi, str(output_dir), api_key),
             daemon=True,
         )
         thread.start()
@@ -324,6 +311,14 @@ def create_app(
         response.call_on_close(lambda: _finish_download(app, job_id, handle))
         _schedule_cleanup(app, job_id, _POST_DOWNLOAD_RETENTION_SECONDS)
         return response
+
+    @app.post("/api/jobs/<job_id>/clear")
+    def clear_job(job_id: str) -> Response:
+        with app.extensions["jobs_lock"]:
+            job_exists = job_id in app.extensions["jobs"]
+        if job_exists:
+            _cleanup_job(app, job_id)
+        return jsonify({"ok": True})
 
     return app
 
@@ -417,6 +412,13 @@ def _run_job(
                 }
                 for question in questions:
                     result[question] = marks.get(question, -1)
+
+                annotated_name = _safe_filename(f"{submission.name}_{submission.student_id}") + ".pdf"
+                annotated_path = Path(output_dir) / "annotated" / annotated_name
+                try:
+                    annotate(submission.path, submission.name, submission.student_id, questions, marks, str(annotated_path))
+                except Exception:
+                    pass  # annotation is best-effort; grading result is unaffected
             except Exception as exc:
                 result = _error_result(submission, questions, str(exc))
 
@@ -445,6 +447,13 @@ def _run_job(
             app.config["OUTPUT_FORMATS"],
         )
         job.files = {Path(path).name: path for path in written}
+
+        annotated_dir = Path(output_dir) / "annotated"
+        if annotated_dir.is_dir() and any(annotated_dir.iterdir()):
+            zip_base = str(Path(output_dir) / "annotated")
+            zip_path = shutil.make_archive(zip_base, "zip", root_dir=str(annotated_dir))
+            job.files[Path(zip_path).name] = zip_path
+
         _emit(
             job,
             {
@@ -552,6 +561,10 @@ def _error_result(submission: Submission, questions: list[str], error_message: s
         result[question] = -1
         result["reasoning"][question] = error_message if question == questions[0] else ""
     return result
+
+
+def _safe_filename(name: str) -> str:
+    return re.sub(r"[^\w\-]+", "_", name).strip("_")
 
 
 def _schedule_cleanup(app: Flask, job_id: str, delay_seconds: int) -> None:

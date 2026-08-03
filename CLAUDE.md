@@ -42,7 +42,8 @@ Single linear pipeline, all under `ai_grader/`:
 | `submission_loader.py` | Discovers files, parses `Name_Course_Year_Assessment_StudentID` filename, auto-detects vision vs text mode |
 | `grader.py` | Sends scheme + submission to Ollama; returns `{Q1: int, ..., reasoning: {...}}`; failed parse → `-1` |
 | `exporter.py` | Writes `marks.xlsx` (Marks + Reasoning sheets, red `-1` rows) and `marks.csv` |
-| `gui.py` | Flask local web app with SSE live progress, file upload, folder browse |
+| `annotator.py` | Writes a marked-up copy of each submission PDF: cover page (marks + reasoning) + best-effort on-page badges near each question's reported location |
+| `gui.py` | Flask local web app with SSE live progress, multi-file upload |
 
 **Vision mode**: PDF with <50 chars extracted text → PyMuPDF renders pages as base64 PNG → sent as images.
 **Text mode**: PDF with text / `.docx` / `.txt` / `.md` → MarkItDown or plain read → embedded in prompt.
@@ -181,3 +182,5 @@ Build scripts: `scripts/build-windows.bat`, `scripts/build-windows.ps1`.
 - **Ollama API key**: optional `Authorization: Bearer` header — passed through GUI form → `grader.py`.
 - **Theme**: GUI supports `brown` (dark) and `light` (cream) themes via CSS variables, persisted in `localStorage`.
 - **Auto-detect questions**: `/api/detect-questions` endpoint — model reads scheme and returns comma-separated question labels.
+- **Annotated PDFs**: `<output>/annotated/<Name>_<StudentID>.pdf` per submission (cover page always present; on-page badges are best-effort and silently skipped when the model didn't report a valid location). GUI additionally zips these into `annotated.zip` for one-click download.
+- **Submissions upload**: GUI takes real file uploads (`<input type="file" multiple>`), not a server-side folder path — required for remote/Tailscale use where the browser and the ai-grader process are on different machines. A "Clear submissions from server now" button triggers the existing job-cleanup path immediately instead of waiting for its retention timer.

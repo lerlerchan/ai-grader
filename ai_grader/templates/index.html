@@ -322,26 +322,6 @@
 
     input::placeholder { color: var(--input-placeholder); }
 
-    .browse-row { display: flex; gap: 10px; }
-    .browse-row input { flex: 1; min-width: 0; }
-
-    .browse-btn {
-      flex-shrink: 0;
-      appearance: none;
-      border: 1px solid var(--browse-border);
-      border-radius: 16px;
-      padding: 14px 18px;
-      background: var(--browse-bg);
-      color: var(--paper);
-      font: inherit;
-      font-size: 0.9rem;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 140ms ease;
-    }
-
-    .browse-btn:hover { background: var(--browse-hover); }
-
     details {
       border-radius: 18px;
       border: 1px solid var(--details-border);
@@ -552,7 +532,7 @@
         <div class="eyebrow">Private local marking</div>
         <h1>AI Grader Studio</h1>
         <p class="lead">
-          Upload a marking scheme, paste the folder path to student work, choose a local Ollama model,
+          Upload a marking scheme, upload the student submissions, choose a local Ollama model,
           and grade the full batch without sending student data anywhere else.
         </p>
       </div>
@@ -577,7 +557,7 @@
     <section class="workspace">
       <section class="panel">
         <h2>Start a grading run</h2>
-        <p>Designed for teachers: one scheme file, one folder path, one model, one button.</p>
+        <p>Designed for teachers: one scheme file, a batch of submissions, one model, one button.</p>
 
         <form id="grading-form" class="grid">
           <div id="form-message" class="message"></div>
@@ -588,17 +568,8 @@
           </div>
 
           <div class="field">
-            <label for="submissions_path">Submissions folder</label>
-            <div class="browse-row">
-              <input
-                id="submissions_path"
-                name="submissions_path"
-                type="text"
-                placeholder="C:\Users\Teacher\Documents\Submissions"
-                required
-              >
-              <button id="browse-button" class="browse-btn" type="button">Browse…</button>
-            </div>
+            <label for="submissions">Student submissions</label>
+            <input id="submissions" name="submissions" type="file" multiple required accept=".pdf,.docx,.txt,.md">
           </div>
 
           <div class="field">
@@ -685,8 +656,6 @@
     const elements = {
       form: document.getElementById("grading-form"),
       scheme: document.getElementById("scheme"),
-      submissionsPath: document.getElementById("submissions_path"),
-      browseButton: document.getElementById("browse-button"),
       model: document.getElementById("model"),
       apiKey: document.getElementById("ollama_api_key"),
       questions: document.getElementById("questions"),
@@ -983,6 +952,26 @@
             link.textContent = `Download ${file.name}`;
             elements.downloads.append(link);
           }
+          const clearButton = document.createElement("button");
+          clearButton.type = "button";
+          clearButton.className = "ghost-button";
+          clearButton.textContent = "Clear submissions from server now";
+          clearButton.addEventListener("click", async () => {
+            if (!confirm("Have you downloaded everything you need? This clears the uploaded files from the server now.")) return;
+            clearButton.disabled = true;
+            clearButton.textContent = "Clearing…";
+            try {
+              await fetch(`/api/jobs/${jobId}/clear`, {
+                method: "POST",
+                headers: { "X-CSRF-Token": csrfToken },
+              });
+              clearButton.textContent = "Cleared.";
+            } catch (error) {
+              clearButton.textContent = "Clear failed — try again.";
+              clearButton.disabled = false;
+            }
+          });
+          elements.downloads.append(clearButton);
           activeStream.close();
           activeStream = null;
           elements.submit.disabled = false;
@@ -1052,21 +1041,6 @@
     });
 
     elements.reset.addEventListener("click", resetProgress);
-
-    elements.browseButton.addEventListener("click", async () => {
-      elements.browseButton.disabled = true;
-      elements.browseButton.textContent = "Opening…";
-      try {
-        const response = await fetch("/api/browse-folder");
-        const payload = await response.json();
-        if (payload.ok && payload.path) elements.submissionsPath.value = payload.path;
-      } catch (_) {
-        // user can still type the path
-      } finally {
-        elements.browseButton.disabled = false;
-        elements.browseButton.textContent = "Browse…";
-      }
-    });
 
     resetProgress();
     loadModels();

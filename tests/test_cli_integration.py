@@ -154,3 +154,55 @@ def test_mark_command_live_ollama_smoke_writes_non_error_csv(
 
     assert -1 <= score <= 1
     assert total == score
+
+
+def test_mark_writes_annotated_pdf(tmp_path, monkeypatch):
+    from ai_grader.submission_loader import Submission
+
+    scheme_path = tmp_path / "scheme.md"
+    scheme_path.write_text("# Scheme\nQ1: 1 mark", encoding="utf-8")
+
+    submissions_dir = tmp_path / "submissions"
+    submissions_dir.mkdir()
+    (submissions_dir / "Alice_MATH2083_2026A_quiz_D240051A.pdf").write_bytes(b"%PDF-1.4\n")
+
+    output_dir = tmp_path / "output"
+    annotated_calls = []
+
+    monkeypatch.setattr("ai_grader.cli.ollama.Client", lambda host: type(
+        "C", (), {"list": lambda self: None}
+    )())
+    monkeypatch.setattr("ai_grader.cli.load_scheme", lambda path: "scheme text")
+    monkeypatch.setattr(
+        "ai_grader.cli.discover",
+        lambda folder: [Submission(student_id="D240051A", name="Alice", path=str(submissions_dir / "Alice_MATH2083_2026A_quiz_D240051A.pdf"))],
+    )
+    monkeypatch.setattr("ai_grader.cli.load", lambda sub, dpi=150: sub)
+    monkeypatch.setattr(
+        "ai_grader.cli.grade",
+        lambda *a, **k: {"Q1": 1, "reasoning": {"Q1": "ok"}, "location": {}},
+    )
+
+    def fake_annotate(submission_path, name, student_id, questions, marks, output_path):
+        annotated_calls.append((student_id, output_path))
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_path).write_bytes(b"%PDF-1.4\n")
+
+    monkeypatch.setattr("ai_grader.cli.annotate", fake_annotate)
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "mark",
+            "--scheme", str(scheme_path),
+            "--submissions", str(submissions_dir),
+            "--model", "fake-model",
+            "--output", str(output_dir),
+            "--questions", "Q1",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert len(annotated_calls) == 1
+    assert annotated_calls[0][0] == "D240051A"
+    assert (output_dir / "annotated").is_dir()

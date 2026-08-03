@@ -4,6 +4,7 @@ cli.py — Command-line interface for ai-grader.
 
 import ipaddress
 import os
+import re
 import sys
 
 # Force UTF-8 output on Windows
@@ -16,6 +17,7 @@ import click
 import ollama
 
 from . import __version__
+from .annotator import annotate
 from .exporter import write_results
 from .grader import grade
 from .scheme_parser import load_scheme
@@ -142,6 +144,13 @@ def mark(scheme, submissions, model, output, fmt, questions, ollama_host, dpi):
             for q in question_list:
                 result[q] = marks.get(q, -1)
             results.append(result)
+
+            annotated_name = _safe_filename(f"{sub.name}_{sub.student_id}") + ".pdf"
+            annotated_path = os.path.join(output, "annotated", annotated_name)
+            try:
+                annotate(sub.path, sub.name, sub.student_id, question_list, marks, annotated_path)
+            except Exception as e:
+                click.echo(f"    (annotation skipped: {e})")
         except Exception as e:
             click.echo(f" FAILED (AI error: {e})  {mode_tag}")
             results.append(_error_result(sub, question_list, str(e)))
@@ -167,6 +176,10 @@ def _error_result(sub, questions, error_msg):
         result[q] = -1
         result["reasoning"][q] = error_msg if q == questions[0] else ""
     return result
+
+
+def _safe_filename(name: str) -> str:
+    return re.sub(r"[^\w\-]+", "_", name).strip("_")
 
 
 @cli.command()
