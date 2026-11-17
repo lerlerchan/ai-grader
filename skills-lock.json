@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "video-perception": {
+      "source": "jordanrendric/claude-video-vision",
+      "sourceType": "github",
+      "skillPath": "skills/video-perception/SKILL.md",
+      "computedHash": "05ae015251400b777f422c121209c09b869111f6de44499f4b681821af2f4346"
+    }
+  }
+}

@@ -23,6 +23,13 @@ def _get_ollama_host() -> str:
     return os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
 
+def _get_client() -> ollama.Client:
+    """Build an Ollama client, adding Bearer auth when OLLAMA_API_KEY is set (needed for ollama.com)."""
+    api_key = os.getenv("OLLAMA_API_KEY")
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+    return ollama.Client(host=_get_ollama_host(), headers=headers)
+
+
 @server.tool()
 def check_health() -> dict[str, Any]:
     """
@@ -35,7 +42,7 @@ def check_health() -> dict[str, Any]:
     """
     host = _get_ollama_host()
     try:
-        client = ollama.Client(host=host)
+        client = _get_client()
         client.list()
         return {
             "healthy": True,
@@ -62,7 +69,7 @@ def list_models() -> dict[str, Any]:
     """
     host = _get_ollama_host()
     try:
-        client = ollama.Client(host=host)
+        client = _get_client()
         response = client.list()
         models = []
         if hasattr(response, "models") and response.models:
@@ -107,7 +114,7 @@ def generate_text(
     """
     host = _get_ollama_host()
     try:
-        client = ollama.Client(host=host)
+        client = _get_client()
         options = {}
         if temperature is not None:
             options["temperature"] = temperature
@@ -162,7 +169,7 @@ def chat(
     """
     host = _get_ollama_host()
     try:
-        client = ollama.Client(host=host)
+        client = _get_client()
         options = {}
         if temperature is not None:
             options["temperature"] = temperature
@@ -212,7 +219,7 @@ def pull_model(model: str) -> dict[str, Any]:
     """
     host = _get_ollama_host()
     try:
-        client = ollama.Client(host=host)
+        client = _get_client()
         response = client.pull(model)
 
         return {
